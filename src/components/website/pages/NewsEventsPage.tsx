@@ -87,7 +87,7 @@ export default function NewsEventsPage() {
       id: 2,
       title: 'Outstanding Performance in Math Competition',
       date: '2025-01-10',
-      summary: 'Our elementary students won first place in the Lagos State Montessori Math Competition!',
+      summary: 'Our elementary students won first place in the Benin City Maths Competition!',
       image: '🏆',
       category: 'Achievement'
     },
@@ -103,7 +103,7 @@ export default function NewsEventsPage() {
       id: 4,
       title: 'Teacher Training Workshop Success',
       date: '2024-12-20',
-      summary: 'Our teachers completed advanced Montessori training to enhance their teaching methods!',
+      summary: 'Our teachers completed advanced early-childhood training to enhance their teaching methods!',
       image: '👩‍🏫',
       category: 'Professional Development'
     }

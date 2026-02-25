@@ -9,7 +9,7 @@ interface HomePageProps {
 export default function HomePage({ onScheduleTour }: HomePageProps) {
   const navigate = useNavigate();
 
-  const handleLearnMontessori = () => {
+  const handleOurPrograms = () => {
     navigate('/about');
   };
 
@@ -36,18 +36,21 @@ export default function HomePage({ onScheduleTour }: HomePageProps) {
             <div className="text-center lg:text-left">
               <div className="mb-6">
                 <span className="inline-block bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm font-semibold mb-4">
-                  🌟 Proudly Nigerian • Montessori Excellence
+                  🌟 Proudly Nigerian · Nurturing Young Minds
                 </span>
               </div>
               
               <h1 className="text-4xl md:text-6xl font-bold text-gray-800 mb-6 leading-tight">
-                Nurturing Young Minds with 
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-green-500"> Excellence</span>
+                The Journey
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-blue-600"> Starts Here!</span>
               </h1>
-              
-              <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                At The Quiverfull School, we embrace the Montessori method to foster independence, 
-                creativity, and a lifelong love of learning in children from creche through Primary 6.
+
+              <p className="text-xl text-gray-600 mb-4 leading-relaxed">
+                At The Quiverfull School, we create a safe, fun, and stimulating environment
+                where every child discovers the joy of learning from Crèche through Kindergarten.
+              </p>
+              <p className="text-base text-orange-600 font-semibold mb-8">
+                Registration forms now available — Crèche, Prenursery, Nursery 1 &amp; 2, Kindergarten · 2025/2026
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -60,10 +63,10 @@ export default function HomePage({ onScheduleTour }: HomePageProps) {
                 </button>
                 
                 <button 
-                  onClick={handleLearnMontessori}
+                  onClick={handleOurPrograms}
                   className="border-2 border-green-500 text-green-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-green-500 hover:text-white transition-all duration-200 transform hover:scale-105"
                 >
-                  Learn About Montessori
+                  Our Programs
                 </button>
               </div>
 
@@ -84,30 +87,23 @@ export default function HomePage({ onScheduleTour }: HomePageProps) {
               </div>
             </div>
 
-            {/* Visual */}
+            {/* Hero Image */}
             <div className="relative">
-              <div className="bg-gradient-to-br from-orange-200 to-green-200 rounded-3xl p-8 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
-                <div className="bg-white rounded-2xl p-6 shadow-lg">
-                  <div className="text-center">
-                    <div className="w-32 h-32 bg-gradient-to-r from-orange-400 to-green-400 rounded-full mx-auto mb-6 flex items-center justify-center">
-                      <div className="text-4xl">🎓</div>
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                      Child-Centered Learning
-                    </h3>
-                    <p className="text-gray-600">
-                      Every child learns at their own pace in our carefully prepared Montessori environments.
-                    </p>
-                  </div>
-                </div>
+              <div className="rounded-3xl overflow-hidden shadow-2xl transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                <img
+                  src="/hero.jpg"
+                  alt="Quiverfull School pupils"
+                  className="w-full h-64 sm:h-80 lg:h-96 object-cover object-top"
+                />
               </div>
-              
+
               {/* Floating Elements */}
-              <div className="absolute -top-4 -right-4 w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce">
+              <div className="absolute -top-4 -right-4 w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce shadow-lg">
                 <span className="text-2xl">⭐</span>
               </div>
-              <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-pink-400 rounded-full flex items-center justify-center animate-pulse">
-                <span className="text-xl">💝</span>
+              <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl px-4 py-2 shadow-lg border border-orange-100 animate-pulse">
+                <p className="text-xs font-bold text-orange-600">Enrolling Now!</p>
+                <p className="text-xs text-gray-500">2025/2026 Session</p>
               </div>
             </div>
           </div>
@@ -125,14 +121,14 @@ export default function HomePage({ onScheduleTour }: HomePageProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div 
-              onClick={handleLearnMontessori}
+              onClick={handleOurPrograms}
               className="text-center p-6 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100 hover:shadow-lg transition-all duration-300 cursor-pointer transform hover:scale-105"
             >
               <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <BookOpen className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-xl font-bold text-gray-800 mb-3">Montessori Method</h3>
-              <p className="text-gray-600">Authentic Montessori education that respects each child's natural development.</p>
+              <h3 className="text-xl font-bold text-gray-800 mb-3">Our Approach</h3>
+              <p className="text-gray-600">Child-centered education that respects each child's natural development.</p>
             </div>
 
             <div 
@@ -143,7 +139,7 @@ export default function HomePage({ onScheduleTour }: HomePageProps) {
                 <Users className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-xl font-bold text-gray-800 mb-3">Certified Teachers</h3>
-              <p className="text-gray-600">Montessori-trained educators dedicated to nurturing young minds.</p>
+              <p className="text-gray-600">Experienced educators dedicated to nurturing young minds.</p>
             </div>
 
             <div 
@@ -165,7 +161,7 @@ export default function HomePage({ onScheduleTour }: HomePageProps) {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
           <h2 className="text-4xl font-bold mb-6">Ready to Begin Your Child's Journey? 🚀</h2>
           <p className="text-xl mb-8">
-            Schedule a tour to see our Montessori classrooms in action and meet our wonderful teachers!
+            Schedule a visit to see our classrooms in action and meet our wonderful teachers!
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button

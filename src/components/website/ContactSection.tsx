@@ -235,7 +235,7 @@ export default function ContactSection() {
                 🏫 Schedule a Campus Tour
               </h4>
               <p className="text-gray-600 mb-4">
-                The best way to understand our Montessori approach is to see it in action. 
+                The best way to experience The Quiverfull School is to see it in action. 
                 We offer guided tours every Tuesday and Thursday at 10:00 AM.
               </p>
               <button className="bg-blue-500 text-white px-6 py-2 rounded-full font-medium hover:bg-blue-600 transition-colors duration-200">

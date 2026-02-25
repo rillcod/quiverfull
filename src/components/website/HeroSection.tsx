@@ -8,7 +8,7 @@ export default function HeroSection({ onScheduleTour }: HeroSectionProps) {
   return (
     <section id="home" className="relative bg-gradient-to-br from-orange-50 via-blue-50 to-green-50 py-20 overflow-hidden">
       {/* Background Elements */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-20 left-10 animate-bounce">
           <Star className="w-8 h-8 text-yellow-400 fill-current" />
         </div>
@@ -26,18 +26,21 @@ export default function HeroSection({ onScheduleTour }: HeroSectionProps) {
           <div className="text-center lg:text-left">
             <div className="mb-6">
               <span className="inline-block bg-orange-100 text-orange-600 px-4 py-2 rounded-full text-sm font-semibold mb-4">
-                🌟 Proudly Nigerian • Montessori Excellence
+                🌟 Proudly Nigerian · Nurturing Young Minds
               </span>
             </div>
-            
+
             <h1 className="text-4xl md:text-6xl font-bold text-gray-800 mb-6 leading-tight">
-              Nurturing Young Minds with 
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-green-500"> Excellence</span>
+              The Journey
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-blue-600"> Starts Here!</span>
             </h1>
-            
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-              At The Quiverfull School, we embrace the Montessori method to foster independence, 
-              creativity, and a lifelong love of learning in children from creche through Primary 6.
+
+            <p className="text-xl text-gray-600 mb-4 leading-relaxed">
+              At The Quiverfull School, we create a safe, fun, and stimulating environment
+              where every child discovers the joy of learning from Crèche through Kindergarten.
+            </p>
+            <p className="text-base text-orange-600 font-semibold mb-8">
+              Registration forms now available — Crèche, Prenursery, Nursery 1 &amp; 2, Kindergarten · 2025/2026
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
@@ -45,12 +48,12 @@ export default function HeroSection({ onScheduleTour }: HeroSectionProps) {
                 onClick={onScheduleTour}
                 className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2"
               >
-                Schedule a Tour
+                Schedule a Visit
                 <ArrowRight className="w-5 h-5" />
               </button>
-              
-              <button className="border-2 border-green-500 text-green-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-green-500 hover:text-white transition-all duration-200 transform hover:scale-105">
-                Learn About Montessori
+
+              <button className="border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-full font-semibold text-lg hover:bg-blue-600 hover:text-white transition-all duration-200 transform hover:scale-105">
+                Our Programs
               </button>
             </div>
 
@@ -61,40 +64,33 @@ export default function HeroSection({ onScheduleTour }: HeroSectionProps) {
                 <div className="text-gray-600 text-sm">Years of Excellence</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-500">200+</div>
-                <div className="text-gray-600 text-sm">Happy Students</div>
+                <div className="text-3xl font-bold text-blue-600">200+</div>
+                <div className="text-gray-600 text-sm">Happy Pupils</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-500">98%</div>
-                <div className="text-gray-600 text-sm">Parent Satisfaction</div>
+                <div className="text-3xl font-bold text-green-500">A/C</div>
+                <div className="text-gray-600 text-sm">Classrooms</div>
               </div>
             </div>
           </div>
 
-          {/* Image/Visual */}
+          {/* Hero Image — real school photo -->*/}
           <div className="relative">
-            <div className="bg-gradient-to-br from-orange-200 to-green-200 rounded-3xl p-8 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-500">
-              <div className="bg-white rounded-2xl p-6 shadow-lg">
-                <div className="text-center">
-                  <div className="w-32 h-32 bg-gradient-to-r from-orange-400 to-green-400 rounded-full mx-auto mb-6 flex items-center justify-center">
-                    <div className="text-4xl">🎓</div>
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                    Child-Centered Learning
-                  </h3>
-                  <p className="text-gray-600">
-                    Every child learns at their own pace in our carefully prepared Montessori environments.
-                  </p>
-                </div>
-              </div>
+            <div className="rounded-3xl overflow-hidden shadow-2xl transform rotate-1 hover:rotate-0 transition-transform duration-500">
+              <img
+                src="/students.jpg"
+                alt="Quiverfull School pupils on the school grounds"
+                className="w-full h-64 sm:h-80 lg:h-96 object-cover object-center"
+              />
             </div>
-            
-            {/* Floating Elements */}
-            <div className="absolute -top-4 -right-4 w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce">
+
+            {/* Floating badge */}
+            <div className="absolute -top-4 -right-4 w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center animate-bounce shadow-lg">
               <span className="text-2xl">⭐</span>
             </div>
-            <div className="absolute -bottom-4 -left-4 w-12 h-12 bg-pink-400 rounded-full flex items-center justify-center animate-pulse">
-              <span className="text-xl">💝</span>
+            <div className="absolute -bottom-4 -left-4 bg-white rounded-2xl px-4 py-2 shadow-lg border border-orange-100 animate-pulse">
+              <p className="text-xs font-bold text-orange-600">Enrolling Now!</p>
+              <p className="text-xs text-gray-500">2025/2026 Session</p>
             </div>
           </div>
         </div>

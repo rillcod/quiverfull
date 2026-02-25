@@ -1,29 +1,29 @@
-import { Users, Award, Globe, Heart } from 'lucide-react';
+import { Users, Globe, Heart, Zap, Camera, GraduationCap, Smile, Thermometer } from 'lucide-react';
 
 export default function AboutSection() {
   const features = [
     {
-      icon: Users,
-      title: 'Child-Centered Approach',
-      description: 'Every child is unique. Our Montessori method respects individual learning styles and paces.',
+      icon: Smile,
+      title: 'Child-Centered Learning',
+      description: 'Every child is unique. We respect individual learning styles and ensure every pupil gets the attention they deserve.',
       color: 'from-blue-400 to-blue-600'
     },
     {
-      icon: Award,
-      title: 'Certified Educators',
-      description: 'Our teachers are Montessori-trained professionals dedicated to nurturing young minds.',
+      icon: GraduationCap,
+      title: 'Experienced Educators',
+      description: 'Our dedicated nursery teachers and caregivers bring warmth, skill, and a genuine love for children to the classroom.',
       color: 'from-green-400 to-green-600'
     },
     {
       icon: Globe,
-      title: 'Global Perspective',
-      description: 'We prepare students for a connected world while celebrating Nigerian culture and values.',
+      title: 'Broad Perspective',
+      description: 'We prepare young learners for a connected world while celebrating Nigerian culture, values, and identity.',
       color: 'from-orange-400 to-orange-600'
     },
     {
       icon: Heart,
       title: 'Caring Community',
-      description: 'A warm, supportive environment where children, families, and educators grow together.',
+      description: 'A warm, safe, and supportive environment where children, families, and educators grow together.',
       color: 'from-pink-400 to-pink-600'
     }
   ];
@@ -37,65 +37,61 @@ export default function AboutSection() {
             About The Quiverfull School
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Founded in 2020, we are Nigeria's premier Montessori institution, dedicated to 
-            fostering independence, creativity, and academic excellence in children from 
-            creche through Primary 6.
+            We are a leading early-childhood institution in Benin City, dedicated to nurturing
+            independence, creativity, and a lifelong love of learning in children from Crèche
+            through Kindergarten.
           </p>
         </div>
 
-        {/* Montessori Philosophy */}
+        {/* Our Approach */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-20">
           <div>
             <h3 className="text-3xl font-bold text-gray-800 mb-6">
-              The Montessori Method
+              Our Approach
             </h3>
             <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-              Dr. Maria Montessori's revolutionary approach recognizes that children are 
-              naturally eager to learn. Our prepared environments and specially trained 
-              teachers guide students to discover their potential through hands-on exploration.
+              We believe that the early years are the most important time in a child's development.
+              Our carefully prepared classrooms, small class sizes, and passionate teachers combine
+              to give each child the individual attention they need to thrive.
             </p>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <span className="text-white text-sm">✓</span>
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <span className="text-white text-xs font-bold">✓</span>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-800">Mixed Age Classrooms</h4>
-                  <p className="text-gray-600">Children learn from and teach each other in multi-age environments.</p>
+                  <h4 className="font-semibold text-gray-800">Play-Based Learning</h4>
+                  <p className="text-gray-600">Learning through structured play develops confidence, curiosity, and social skills naturally.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <span className="text-white text-sm">✓</span>
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <span className="text-white text-xs font-bold">✓</span>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-800">Self-Directed Learning</h4>
-                  <p className="text-gray-600">Students choose activities that match their interests and developmental needs.</p>
+                  <h4 className="font-semibold text-gray-800">Safe & Secure Environment</h4>
+                  <p className="text-gray-600">CCTV in all classrooms and play areas, constant power supply, and fully air-conditioned spaces.</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                  <span className="text-white text-sm">✓</span>
+                <div className="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <span className="text-white text-xs font-bold">✓</span>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-800">Hands-On Materials</h4>
-                  <p className="text-gray-600">Specially designed materials make abstract concepts concrete and understandable.</p>
+                  <h4 className="font-semibold text-gray-800">Small Class Sizes</h4>
+                  <p className="text-gray-600">Small pupil-to-teacher ratios ensure every child receives personalised attention and care.</p>
                 </div>
               </div>
             </div>
           </div>
-          
+
           <div className="relative">
-            <div className="bg-gradient-to-br from-orange-100 to-green-100 rounded-3xl p-8 shadow-xl">
-              <div className="text-center">
-                <div className="text-6xl mb-6">🌱</div>
-                <h4 className="text-2xl font-bold text-gray-800 mb-4">
-                  "Help me to do it myself"
-                </h4>
-                <p className="text-gray-600 italic">
-                  - Dr. Maria Montessori
-                </p>
-              </div>
+            <div className="rounded-3xl overflow-hidden shadow-xl">
+              <img
+                src="/hero.jpg"
+                alt="Quiverfull School pupils"
+                className="w-full h-64 sm:h-80 object-cover object-top"
+              />
             </div>
           </div>
         </div>
@@ -123,14 +119,54 @@ export default function AboutSection() {
           })}
         </div>
 
+        {/* Why We Stand Out */}
+        <div className="mt-20">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h3 className="text-3xl font-bold text-gray-800 mb-8">Why We Stand Out</h3>
+              <div className="space-y-5">
+                {[
+                  { icon: Smile,       text: 'Infused fun into learning' },
+                  { icon: Thermometer, text: 'Spacious air-conditioned classrooms' },
+                  { icon: Users,       text: 'Small pupil to teacher ratio' },
+                  { icon: Camera,      text: 'CCTV in classrooms & play areas' },
+                  { icon: GraduationCap, text: 'Experienced nursery teachers and caregivers' },
+                  { icon: Zap,         text: 'Constant power supply' },
+                ].map(({ icon: Icon, text }, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Icon className="w-5 h-5 text-orange-500" />
+                    </div>
+                    <span className="text-gray-700 font-medium">{text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="rounded-3xl overflow-hidden shadow-xl">
+                <img
+                  src="/activity.jpg"
+                  alt="Students enjoying activities at The Quiverfull School"
+                  className="w-full h-64 sm:h-80 object-cover object-top"
+                />
+              </div>
+              <div className="absolute -bottom-4 -right-4 bg-orange-500 text-white rounded-2xl px-5 py-3 shadow-lg">
+                <p className="text-sm font-bold">Enrolling Now!</p>
+                <p className="text-xs opacity-90">2025/2026 Session</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Mission Statement */}
         <div className="mt-20 text-center">
-          <div className="bg-gradient-to-r from-orange-500 to-green-500 rounded-3xl p-12 text-white">
+          <div className="bg-gradient-to-r from-blue-700 to-blue-900 rounded-3xl p-12 text-white">
             <h3 className="text-3xl font-bold mb-6">Our Mission</h3>
             <p className="text-xl leading-relaxed max-w-4xl mx-auto">
-              To provide a nurturing Montessori environment that respects each child's natural 
-              development, fosters independence and creativity, and prepares confident, 
-              compassionate global citizens rooted in Nigerian values.
+              To provide a nurturing, safe, and stimulating early-childhood environment that
+              respects each child's natural development, fosters independence and creativity,
+              and lays a strong foundation for lifelong learning — rooted in Nigerian values.
             </p>
           </div>
         </div>

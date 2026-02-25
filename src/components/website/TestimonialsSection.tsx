@@ -5,7 +5,7 @@ export default function TestimonialsSection() {
     {
       name: 'Mrs. Adebayo',
       role: 'Parent of Kemi (Age 5)',
-      content: 'The Quiverfull School has been transformational for our daughter. She\'s become so independent and confident. The Montessori approach really works!',
+      content: 'The Quiverfull School has been transformational for our daughter. She\'s become so independent and confident. The approach really works!',
       rating: 5,
       image: '👩🏾‍💼'
     },
@@ -56,7 +56,7 @@ export default function TestimonialsSection() {
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
             Hear from parents who have experienced the transformative power of 
-            Montessori education at The Quiverfull School.
+            early education at The Quiverfull School.
           </p>
         </div>
 
@@ -134,7 +134,7 @@ export default function TestimonialsSection() {
             Join Our Community of Happy Families
           </h3>
           <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-            Experience the difference Montessori education can make in your child's life.
+            Experience the difference quality early education can make in your child's life.
           </p>
           <button className="bg-gradient-to-r from-orange-500 to-green-500 text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105">
             Schedule Your Visit Today

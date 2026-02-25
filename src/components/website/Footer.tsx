@@ -1,4 +1,4 @@
-import { BookOpen, Phone, Mail, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
+import { Phone, Mail, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export default function Footer() {
@@ -23,17 +23,21 @@ export default function Footer() {
           {/* School Info */}
           <div>
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-orange-400 to-orange-500 rounded-full flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 rounded-full bg-white p-0.5 flex-shrink-0 shadow">
+                <img
+                  src="/logo.jpg"
+                  alt="The Quiverfull School"
+                  className="w-full h-full rounded-full object-contain"
+                />
               </div>
               <div>
                 <h3 className="text-xl font-bold">The Quiverfull School</h3>
-                <p className="text-gray-400 text-sm">Montessori Excellence</p>
+                <p className="text-gray-400 text-sm">Excellence in Early Education</p>
               </div>
             </div>
             <p className="text-gray-300 mb-6 leading-relaxed">
-              Nurturing young minds with excellence through authentic Montessori education 
-              in the heart of Lagos, Nigeria.
+              Nurturing young minds with excellence through quality early-childhood education
+              in the heart of Benin City, Nigeria.
             </p>
             <div className="flex space-x-4">
               <a href="#" className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center hover:bg-blue-700 transition-colors">
@@ -90,16 +94,19 @@ export default function Footer() {
                 <MapPin className="w-5 h-5 text-orange-400 flex-shrink-0 mt-1" />
                 <div>
                   <p className="text-gray-300">
-                    123 Education Drive<br />
-                    Victoria Island, Lagos<br />
-                    Nigeria
+                    2, Akpofa Avenue<br />
+                    Off 2nd Ugbor Road, G.R.A<br />
+                    Benin City, Edo State
                   </p>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-orange-400 flex-shrink-0" />
-                <p className="text-gray-300">+234 803 123 4567</p>
+
+              <div className="flex items-start gap-3">
+                <Phone className="w-5 h-5 text-orange-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-gray-300">+2348053402223</p>
+                  <p className="text-gray-300">+2348036790886</p>
+                </div>
               </div>
               
               <div className="flex items-center gap-3">

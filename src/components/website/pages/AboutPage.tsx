@@ -36,7 +36,7 @@ export default function AboutPage() {
     {
       name: 'Mrs. Adunni Okafor',
       role: 'Head of School',
-      credentials: 'M.Ed Montessori, AMI Certified',
+      credentials: 'M.Ed Early Childhood Education',
       experience: '15 years',
       specialty: 'Early Childhood Development',
       image: '👩🏾‍🏫',
@@ -45,7 +45,7 @@ export default function AboutPage() {
     {
       name: 'Miss Kemi Adeleke',
       role: 'Primary Guide',
-      credentials: 'B.Ed, Montessori Certified',
+      credentials: 'B.Ed Early Childhood Education',
       experience: '8 years',
       specialty: 'Language & Literacy',
       image: '👩🏾‍💼',
@@ -54,7 +54,7 @@ export default function AboutPage() {
     {
       name: 'Mr. Chidi Nwankwo',
       role: 'Elementary Guide',
-      credentials: 'M.Sc Mathematics, Montessori Trained',
+      credentials: 'M.Sc Mathematics, B.Ed',
       experience: '10 years',
       specialty: 'Mathematics & Science',
       image: '👨🏾‍🔬',
@@ -63,7 +63,7 @@ export default function AboutPage() {
     {
       name: 'Mrs. Fatima Ibrahim',
       role: 'Toddler Guide',
-      credentials: 'B.Ed Early Childhood, Montessori Certified',
+      credentials: 'B.Ed Early Childhood Education',
       experience: '12 years',
       specialty: 'Toddler Development',
       image: '👩🏾‍🍼',
@@ -117,7 +117,7 @@ export default function AboutPage() {
                   like the bright star they are! 🌟
                 </p>
                 <p>
-                  We chose the special Montessori way of learning because it lets children 
+                  We chose a child-centered approach to learning because it lets children 
                   be the heroes of their own learning adventure. Just like how every child 
                   is different and special, our school celebrates what makes each student unique!
                 </p>
@@ -137,7 +137,7 @@ export default function AboutPage() {
                     "Help me to do it myself"
                   </h3>
                   <p className="text-gray-600 italic text-lg">
-                    - Dr. Maria Montessori
+                    
                   </p>
                   <p className="text-sm text-gray-500 mt-4">
                     This is our special motto that means we help children 

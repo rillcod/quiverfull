@@ -1,74 +1,97 @@
-import { Baby, Users, GraduationCap, Clock, MapPin, Star } from 'lucide-react';
+import { Baby, Users, GraduationCap, BookOpen, Clock, Star } from 'lucide-react';
 
 export default function ProgramsSection() {
   const programs = [
     {
-      id: 'toddler',
-      title: 'Toddler Program',
-      subtitle: 'Ages 18 months - 3 years',
+      id: 'creche',
+      title: 'Crèche',
+      subtitle: 'Ages 0 – 18 months',
       icon: Baby,
       color: 'from-pink-400 to-pink-600',
       bgColor: 'bg-pink-50',
-      description: 'A gentle introduction to learning through exploration and discovery.',
+      description: 'A warm and nurturing home-away-from-home for your youngest ones. Our caregivers provide attentive, loving care in a safe and stimulating environment.',
       features: [
-        'Toilet training support',
-        'Language development',
-        'Practical life activities',
-        'Sensory exploration',
+        'Attentive, loving caregivers',
+        'Safe, clean sleeping areas',
+        'Sensory play and exploration',
+        'Age-appropriate activities',
+        'Regular feeding & routine'
+      ],
+      schedule: 'Monday – Friday, 7:30 AM – 3:00 PM',
+      classSize: 'Small groups with dedicated caregivers',
+      highlights: [
+        'Fully air-conditioned rooms',
+        'CCTV monitoring at all times',
+        'Constant power supply'
+      ]
+    },
+    {
+      id: 'prenursery',
+      title: 'Pre-Nursery',
+      subtitle: 'Ages 18 months – 2½ years',
+      icon: Users,
+      color: 'from-orange-400 to-orange-600',
+      bgColor: 'bg-orange-50',
+      description: 'The first steps into structured learning through play. Children develop language, social confidence, and motor skills in a joyful, child-centered setting.',
+      features: [
+        'Language & communication',
+        'Fine and gross motor skills',
+        'Creative arts and crafts',
+        'Music and movement',
         'Social skills development'
       ],
-      schedule: 'Monday - Friday, 8:00 AM - 12:00 PM',
-      classSize: 'Maximum 12 children with 2 teachers',
+      schedule: 'Monday – Friday, 7:30 AM – 2:00 PM',
+      classSize: 'Small class sizes for personalised attention',
       highlights: [
-        'Prepared environment for toddlers',
-        'Parent-child separation support',
-        'Individual attention and care'
+        'Play-based curriculum',
+        'Structured daily routine',
+        'Parent progress reports'
       ]
     },
     {
-      id: 'primary',
-      title: 'Primary Program',
-      subtitle: 'Ages 3 - 6 years (Creche - Basic 2)',
-      icon: Users,
+      id: 'nursery',
+      title: 'Nursery 1 & 2',
+      subtitle: 'Ages 2½ – 4 years',
+      icon: BookOpen,
       color: 'from-blue-400 to-blue-600',
       bgColor: 'bg-blue-50',
-      description: 'Foundation years focusing on independence, social skills, and academic readiness.',
+      description: 'Building essential early-literacy and numeracy foundations through hands-on activities, storytelling, and guided exploration in fully equipped classrooms.',
       features: [
-        'Mixed-age classrooms',
-        'Practical life skills',
-        'Mathematics with concrete materials',
-        'Language and literacy',
-        'Cultural studies and science'
+        'Early literacy & phonics',
+        'Early numeracy & counting',
+        'Science discovery activities',
+        'Outdoor & indoor play',
+        'Character development'
       ],
-      schedule: 'Monday - Friday, 8:00 AM - 2:00 PM',
-      classSize: 'Maximum 25 children with 2 certified teachers',
+      schedule: 'Monday – Friday, 7:30 AM – 2:00 PM',
+      classSize: 'Maximum 20 pupils per class',
       highlights: [
-        'Three-year cycle program',
-        'Leadership opportunities for older children',
-        'Preparation for elementary education'
+        'Experienced class teachers',
+        'Structured learning with fun',
+        'End-of-term assessments'
       ]
     },
     {
-      id: 'elementary',
-      title: 'Elementary Program',
-      subtitle: 'Ages 6 - 12 years (Basic 3 - Basic 6)',
+      id: 'kindergarten',
+      title: 'Kindergarten',
+      subtitle: 'Ages 4 – 6 years',
       icon: GraduationCap,
       color: 'from-green-400 to-green-600',
       bgColor: 'bg-green-50',
-      description: 'Advanced learning with emphasis on research, collaboration, and critical thinking.',
+      description: 'Preparing children for primary school with confidence. Pupils develop reading, writing, critical thinking, and independence in a nurturing, structured environment.',
       features: [
-        'Cosmic education approach',
-        'Research and project-based learning',
-        'Advanced mathematics and geometry',
-        'Nigerian history and culture',
-        'Science experiments and exploration'
+        'Reading & writing foundations',
+        'Mathematics & problem solving',
+        'Science & technology exposure',
+        'Arts, crafts & performance',
+        'Primary school preparation'
       ],
-      schedule: 'Monday - Friday, 8:00 AM - 3:00 PM',
-      classSize: 'Maximum 28 children with 2 certified teachers',
+      schedule: 'Monday – Friday, 7:30 AM – 2:30 PM',
+      classSize: 'Maximum 20 pupils per class',
       highlights: [
-        'Going out experiences',
-        'Student-led conferences',
-        'Preparation for secondary education'
+        'School readiness programme',
+        'Graduation ceremony',
+        'Strong primary school outcomes'
       ]
     }
   ];
@@ -82,8 +105,8 @@ export default function ProgramsSection() {
             Our Programs
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Each program is carefully designed to meet the developmental needs of children 
-            at different stages, following authentic Montessori principles.
+            From Crèche through Kindergarten, each program is carefully designed to meet
+            the developmental needs of children at every stage of their early years.
           </p>
         </div>
 
@@ -92,7 +115,7 @@ export default function ProgramsSection() {
           {programs.map((program, index) => {
             const IconComponent = program.icon;
             const isEven = index % 2 === 0;
-            
+
             return (
               <div
                 key={program.id}
@@ -157,14 +180,15 @@ export default function ProgramsSection() {
                   <div className={`${program.bgColor} rounded-3xl p-8 shadow-xl transform hover:scale-105 transition-transform duration-300`}>
                     <div className="text-center mb-6">
                       <div className="text-6xl mb-4">
-                        {program.id === 'toddler' ? '🧸' : 
-                         program.id === 'primary' ? '🎨' : '🔬'}
+                        {program.id === 'creche'      ? '🧸' :
+                         program.id === 'prenursery'  ? '🎨' :
+                         program.id === 'nursery'     ? '📚' : '🎓'}
                       </div>
                       <h4 className="text-2xl font-bold text-gray-800 mb-4">
-                        Program Highlights
+                        Programme Highlights
                       </h4>
                     </div>
-                    
+
                     <div className="space-y-4">
                       {program.highlights.map((highlight, idx) => (
                         <div key={idx} className="bg-white rounded-lg p-4 shadow-sm">
@@ -180,7 +204,7 @@ export default function ProgramsSection() {
 
                     <div className="mt-6 text-center">
                       <button className={`bg-gradient-to-r ${program.color} text-white px-6 py-3 rounded-full font-semibold hover:shadow-lg transition-all duration-200 transform hover:scale-105`}>
-                        Learn More About This Program
+                        Learn More
                       </button>
                     </div>
                   </div>
@@ -194,12 +218,13 @@ export default function ProgramsSection() {
         <div className="mt-20 text-center">
           <div className="bg-white rounded-3xl p-12 shadow-xl">
             <h3 className="text-3xl font-bold text-gray-800 mb-6">
-              Ready to Begin Your Child's Montessori Journey?
+              Ready to Enrol Your Child?
             </h3>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Schedule a tour to see our prepared environments and meet our dedicated educators.
+              Registration forms are now available for the 2025/2026 session.
+              Visit us or call today to secure your child's place.
             </p>
-            <button className="bg-gradient-to-r from-orange-500 to-green-500 text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+            <button className="bg-gradient-to-r from-orange-500 to-blue-700 text-white px-8 py-4 rounded-full font-semibold text-lg hover:shadow-lg transition-all duration-200 transform hover:scale-105">
               Schedule Your Visit Today
             </button>
           </div>

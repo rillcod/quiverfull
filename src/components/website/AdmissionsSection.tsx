@@ -12,7 +12,7 @@ export default function AdmissionsSection() {
     {
       step: 2,
       title: 'Schedule Tour',
-      description: 'Visit our campus and observe our Montessori classrooms in action.',
+      description: 'Visit our school and see our classrooms and facilities in action.',
       icon: Calendar,
       color: 'from-green-400 to-green-600'
     },
@@ -34,25 +34,25 @@ export default function AdmissionsSection() {
 
   const tuitionRates = [
     {
-      program: 'Toddler Program',
-      age: '18 months - 3 years',
-      tuition: '₦450,000',
-      period: 'per academic year',
-      includes: ['Meals', 'Materials', 'Field trips']
+      program: 'Crèche',
+      age: '0 – 18 months',
+      tuition: 'Contact Us',
+      period: 'for fee schedule',
+      includes: ['Loving caregivers', 'Feeding support', 'Safe sleeping area']
     },
     {
-      program: 'Primary Program',
-      age: '3 - 6 years',
-      tuition: '₦550,000',
-      period: 'per academic year',
-      includes: ['Meals', 'Materials', 'Field trips', 'After-school care']
+      program: 'Pre-Nursery & Nursery',
+      age: '18 months – 4 years',
+      tuition: 'Contact Us',
+      period: 'for fee schedule',
+      includes: ['Meals', 'Learning materials', 'Activity packs']
     },
     {
-      program: 'Elementary Program',
-      age: '6 - 12 years',
-      tuition: '₦650,000',
-      period: 'per academic year',
-      includes: ['Meals', 'Materials', 'Field trips', 'After-school care', 'Going out experiences']
+      program: 'Kindergarten',
+      age: '4 – 6 years',
+      tuition: 'Contact Us',
+      period: 'for fee schedule',
+      includes: ['Meals', 'Learning materials', 'Activity packs', 'Graduation ceremony']
     }
   ];
 
@@ -74,8 +74,8 @@ export default function AdmissionsSection() {
             Admissions
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            We welcome families who share our commitment to child-centered education. 
-            Our admissions process is designed to ensure the best fit for your child.
+            Registration forms are now available for the 2025/2026 academic session.
+            We welcome all families who want the best start for their children.
           </p>
         </div>
 
@@ -151,8 +151,8 @@ export default function AdmissionsSection() {
                 Financial Aid Available
               </h4>
               <p className="text-lg text-gray-600 mb-6">
-                We believe every child deserves a quality Montessori education. 
-                Financial assistance is available for qualifying families.
+                We believe every child deserves a quality education.
+                Contact us to discuss our fee schedule and available support options.
               </p>
               <button className="bg-blue-500 text-white px-6 py-3 rounded-full font-semibold hover:bg-blue-600 transition-colors duration-200">
                 Learn About Financial Aid
@@ -190,8 +190,8 @@ export default function AdmissionsSection() {
                 <div className="flex items-center gap-3">
                   <Calendar className="w-5 h-5 text-orange-500" />
                   <div>
-                    <h4 className="font-semibold text-gray-800">Application Deadline</h4>
-                    <p className="text-gray-600">March 31, 2025</p>
+                    <h4 className="font-semibold text-gray-800">Registration Open</h4>
+                    <p className="text-gray-600">Now – for September 2025/2026</p>
                   </div>
                 </div>
               </div>
@@ -200,8 +200,8 @@ export default function AdmissionsSection() {
                 <div className="flex items-center gap-3">
                   <Clock className="w-5 h-5 text-green-500" />
                   <div>
-                    <h4 className="font-semibold text-gray-800">Admission Decisions</h4>
-                    <p className="text-gray-600">April 30, 2025</p>
+                    <h4 className="font-semibold text-gray-800">Session Resumes</h4>
+                    <p className="text-gray-600">September 2025</p>
                   </div>
                 </div>
               </div>
@@ -211,7 +211,7 @@ export default function AdmissionsSection() {
                   <Users className="w-5 h-5 text-blue-500" />
                   <div>
                     <h4 className="font-semibold text-gray-800">New Family Orientation</h4>
-                    <p className="text-gray-600">August 15, 2025</p>
+                    <p className="text-gray-600">August 2025 (date to be confirmed)</p>
                   </div>
                 </div>
               </div>
@@ -226,7 +226,7 @@ export default function AdmissionsSection() {
               Ready to Start Your Application?
             </h3>
             <p className="text-xl mb-8 max-w-2xl mx-auto">
-              Take the first step towards your child's Montessori education journey.
+              Take the first step towards your child's bright future at The Quiverfull School.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button className="bg-white text-orange-500 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-100 transition-colors duration-200">
