@@ -580,7 +580,7 @@ export default function AdmissionsPage() {
             <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6">
               <MapPin className="w-8 h-8 mx-auto mb-3" />
               <h3 className="font-bold mb-2">Visit Us!</h3>
-              <p>Victoria Island, Lagos</p>
+              <p>2, Akpofa Avenue, G.R.A, Benin City</p>
             </div>
           </div>
 

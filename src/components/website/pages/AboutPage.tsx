@@ -124,7 +124,7 @@ export default function AboutPage() {
                 <p>
                   Today, we're proud to be home to over 200 happy children who come to school 
                   excited to learn, play, and grow together. Our school family includes amazing 
-                  teachers, supportive parents, and the most wonderful students in all of Lagos!
+                  teachers, supportive parents, and the most wonderful students in Benin City!
                 </p>
               </div>
             </div>

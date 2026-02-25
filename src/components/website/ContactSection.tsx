@@ -54,7 +54,7 @@ export default function ContactSection() {
                   <h4 className="font-semibold text-gray-800 mb-1">Address</h4>
                   <p className="text-gray-600">
                     123 Education Drive<br />
-                    Victoria Island, Lagos<br />
+                    2, Akpofa Avenue, G.R.A, Benin City<br />
                     Nigeria
                   </p>
                 </div>
@@ -106,7 +106,7 @@ export default function ContactSection() {
               <div className="text-center">
                 <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">Interactive Map</p>
-                <p className="text-sm text-gray-400">Victoria Island, Lagos</p>
+                <p className="text-sm text-gray-400">2, Akpofa Avenue, G.R.A, Benin City</p>
               </div>
             </div>
           </div>
