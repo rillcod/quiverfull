@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, GraduationCap, Users, BookOpen, ClipboardCheck,
-  BarChart3, DollarSign, Monitor, Bell, Calendar, TrendingUp, Settings, UserPlus, Bus, Heart, FileText, MonitorCheck, Clock, Upload, MessageSquare, BookMarked
+  BarChart3, DollarSign, Monitor, Bell, Calendar, TrendingUp, Settings, UserPlus, Bus, Heart, FileText, MonitorCheck, Clock, Upload, MessageSquare, BookMarked, ClipboardList
 } from 'lucide-react';
 import DashboardShell, { NavItem } from './DashboardShell';
 import type { ProfileRow } from '../../lib/supabase';
@@ -26,9 +26,11 @@ import ParentsSection from './admin/ParentsSection';
 import TransportSection from './admin/TransportSection';
 import HealthRecordsSection from './admin/HealthRecordsSection';
 import SubjectsSection from './admin/SubjectsSection';
+import AdmissionsSection from './admin/AdmissionsSection';
 
 const adminNav: NavItem[] = [
   { id: 'overview',      label: 'Overview',      icon: LayoutDashboard, color: 'text-indigo-400' },
+  { id: 'admissions',    label: 'Admissions',     icon: ClipboardList,   color: 'text-orange-400' },
   { id: 'students',      label: 'Students',       icon: GraduationCap,   color: 'text-blue-400' },
   { id: 'teachers',      label: 'Teachers',       icon: Users,           color: 'text-green-400' },
   { id: 'classes',       label: 'Classes',        icon: BookOpen,        color: 'text-violet-400' },
@@ -66,6 +68,7 @@ export default function AdminDashboard({ profile }: { profile: ProfileRow }) {
     const props = { profile, onNavigate: setSection };
     switch (section) {
       case 'overview':      return <OverviewSection {...props} />;
+      case 'admissions':    return <AdmissionsSection {...props} />;
       case 'students':      return <StudentsSection {...props} />;
       case 'teachers':      return <TeachersSection {...props} />;
       case 'classes':       return <ClassesSection {...props} />;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, BookOpen, ClipboardCheck, BarChart3,
-  Monitor, Bell, Calendar, MonitorCheck, Clock, MessageSquare, User
+  Monitor, Bell, Calendar, MonitorCheck, Clock, MessageSquare, User, FileText
 } from 'lucide-react';
 import DashboardShell, { NavItem } from './DashboardShell';
 import type { ProfileRow } from '../../lib/supabase';
@@ -16,12 +16,14 @@ import TeacherCBTSection from './teacher/CBTSection';
 import TeacherTimetableSection from './teacher/TimetableSection';
 import MessagesSection from './shared/MessagesSection';
 import ProfileEditSection from './shared/ProfileEditSection';
+import TeacherResultsSection from './teacher/ResultsSection';
 
 const teacherNav: NavItem[] = [
   { id: 'overview',      label: 'Overview',       icon: LayoutDashboard, color: 'text-blue-400' },
   { id: 'classes',       label: 'My Classes',     icon: BookOpen,        color: 'text-green-400' },
   { id: 'attendance',    label: 'Attendance',     icon: ClipboardCheck,  color: 'text-cyan-400' },
   { id: 'grades',        label: 'Grades',         icon: BarChart3,       color: 'text-purple-400' },
+  { id: 'results',       label: 'Result Cards',   icon: FileText,        color: 'text-green-400' },
   { id: 'lms',           label: 'LMS',            icon: Monitor,        color: 'text-pink-400' },
   { id: 'announcements', label: 'Announcements',  icon: Bell,            color: 'text-orange-400' },
   { id: 'calendar',      label: 'Calendar',       icon: Calendar,        color: 'text-teal-400' },
@@ -49,6 +51,7 @@ export default function TeacherDashboard({ profile }: { profile: ProfileRow }) {
       case 'classes':       return <ClassesSection {...props} />;
       case 'attendance':    return <AttendanceSection {...props} />;
       case 'grades':        return <GradesSection {...props} />;
+      case 'results':       return <TeacherResultsSection {...props} />;
       case 'lms':           return <LMSSection {...props} />;
       case 'announcements': return <AnnouncementsSection {...props} />;
       case 'calendar':      return <CalendarSection {...props} />;

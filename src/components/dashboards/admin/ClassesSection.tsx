@@ -1,34 +1,52 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Search, Users, BookOpen, TrendingUp, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { getDefaultAcademicYear } from '../../../lib/academicConfig';
 import type { ProfileRow, ClassRow, ClassInsert, ClassLevel } from '../../../lib/supabase';
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
 
-/** classes.teacher_id references profiles(id), so we get profile name via profiles:teacher_id */
 interface ClassWithProfile extends ClassRow {
   profiles?: { first_name: string; last_name: string } | null;
   student_count?: number;
 }
 
-const LEVEL_LABELS: Record<ClassLevel, string> = { creche: 'Creche', basic1: 'Basic 1', basic2: 'Basic 2', basic3: 'Basic 3', basic4: 'Basic 4', basic5: 'Basic 5', basic6: 'Basic 6' };
+interface StudentInClass {
+  id: string;
+  student_id: string;
+  gender: string | null;
+  profiles: { first_name: string; last_name: string } | null;
+}
+
+const LEVEL_LABELS: Record<ClassLevel, string> = {
+  creche: 'Creche', basic1: 'Basic 1', basic2: 'Basic 2', basic3: 'Basic 3',
+  basic4: 'Basic 4', basic5: 'Basic 5', basic6: 'Basic 6',
+};
+const LEVEL_ORDER: ClassLevel[] = ['creche', 'basic1', 'basic2', 'basic3', 'basic4', 'basic5', 'basic6'];
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
-  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, []);
+  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
   return (
     <div className={`fixed bottom-6 right-6 z-[100] px-5 py-3 rounded-xl shadow-xl text-white text-sm font-medium flex items-center gap-2 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
-      {msg} <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><X className="w-4 h-4" /></button>
+      {msg}<button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><X className="w-4 h-4" /></button>
     </div>
   );
 }
 
+function fillBarColor(count: number, cap: number | null) {
+  if (!cap || cap === 0) return 'bg-gray-300';
+  const pct = count / cap;
+  if (pct >= 0.9) return 'bg-red-500';
+  if (pct >= 0.7) return 'bg-amber-500';
+  return 'bg-green-500';
+}
+
 export default function ClassesSection({ profile: _profile }: Props) {
   const [classes, setClasses] = useState<ClassWithProfile[]>([]);
-  /** Teachers list: we need profile_id for classes.teacher_id (FK to profiles) */
   const [teachers, setTeachers] = useState<{ id: string; profile_id: string; profiles: { first_name: string; last_name: string } | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filterLevel, setFilterLevel] = useState('');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<ClassWithProfile | null>(null);
@@ -38,28 +56,56 @@ export default function ClassesSection({ profile: _profile }: Props) {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ClassWithProfile | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [rosterClass, setRosterClass] = useState<ClassWithProfile | null>(null);
+  const [roster, setRoster] = useState<StudentInClass[]>([]);
+  const [rosterLoading, setRosterLoading] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: classData, error: classErr } = await supabase.from('classes').select('*, profiles:teacher_id(first_name, last_name)').order('name');
+    const { data: classData, error: classErr } = await supabase
+      .from('classes')
+      .select('*, profiles:teacher_id(first_name, last_name)')
+      .order('name');
     if (classErr) { setToast({ msg: classErr.message, type: 'error' }); setLoading(false); return; }
     const { data: countData } = await supabase.from('students').select('class_id').eq('is_active', true);
     const countByClass: Record<string, number> = {};
     (countData || []).forEach((s: { class_id: string | null }) => {
       if (s.class_id) countByClass[s.class_id] = (countByClass[s.class_id] || 0) + 1;
     });
-    const withCount = (classData || []).map((c: ClassWithProfile) => ({ ...c, student_count: countByClass[c.id] || 0 }));
-    setClasses(withCount);
-    const { data: teacherData } = await supabase.from('teachers').select('id, profile_id, profiles:profile_id(first_name, last_name)').eq('is_active', true);
-    setTeachers((teacherData || []) as unknown as { id: string; profile_id: string; profiles: { first_name: string; last_name: string } | null }[]);
+    setClasses((classData || []).map((c: ClassWithProfile) => ({ ...c, student_count: countByClass[c.id] || 0 })));
+    const { data: teacherData } = await supabase
+      .from('teachers')
+      .select('id, profile_id, profiles:profile_id(first_name, last_name)')
+      .eq('is_active', true);
+    setTeachers((teacherData || []) as unknown as typeof teachers);
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, []);
 
-  const filtered = classes.filter(c =>
-    !search || c.name.toLowerCase().includes(search.toLowerCase()) || LEVEL_LABELS[c.level].toLowerCase().includes(search.toLowerCase())
-  );
+  const openRoster = async (c: ClassWithProfile) => {
+    setRosterClass(c);
+    setRosterLoading(true);
+    const { data } = await supabase
+      .from('students')
+      .select('id, student_id, gender, profiles:profile_id(first_name, last_name)')
+      .eq('class_id', c.id)
+      .eq('is_active', true)
+      .order('student_id');
+    setRoster((data || []) as unknown as StudentInClass[]);
+    setRosterLoading(false);
+  };
+
+  const totalStudents = classes.reduce((s, c) => s + (c.student_count || 0), 0);
+  const totalCapacity = classes.reduce((s, c) => s + (c.capacity || 0), 0);
+  const avgFillPct = totalCapacity > 0 ? Math.round((totalStudents / totalCapacity) * 100) : 0;
+  const unassignedCount = classes.filter(c => !c.teacher_id).length;
+
+  const filtered = classes.filter(c => {
+    const q = search.toLowerCase();
+    const matchSearch = !search || c.name.toLowerCase().includes(q) || LEVEL_LABELS[c.level].toLowerCase().includes(q);
+    return matchSearch && (!filterLevel || c.level === filterLevel);
+  });
 
   const openAdd = () => {
     setEditing(null);
@@ -69,13 +115,7 @@ export default function ClassesSection({ profile: _profile }: Props) {
 
   const openEdit = (c: ClassWithProfile) => {
     setEditing(c);
-    setForm({
-      name: c.name,
-      level: c.level,
-      academic_year: c.academic_year,
-      teacher_id: c.teacher_id || '',
-      capacity: String(c.capacity ?? 25),
-    });
+    setForm({ name: c.name, level: c.level, academic_year: c.academic_year, teacher_id: c.teacher_id || '', capacity: String(c.capacity ?? 25) });
     setShowModal(true);
   };
 
@@ -84,11 +124,8 @@ export default function ClassesSection({ profile: _profile }: Props) {
     setSaving(true);
     try {
       const payload: ClassInsert = {
-        name: form.name.trim(),
-        level: form.level,
-        academic_year: form.academic_year,
-        teacher_id: form.teacher_id || null,
-        capacity: parseInt(form.capacity, 10) || 25,
+        name: form.name.trim(), level: form.level, academic_year: form.academic_year,
+        teacher_id: form.teacher_id || null, capacity: parseInt(form.capacity, 10) || 25,
       };
       if (editing) {
         const { error } = await supabase.from('classes').update(payload).eq('id', editing.id);
@@ -119,20 +156,50 @@ export default function ClassesSection({ profile: _profile }: Props) {
   return (
     <div className="space-y-5">
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
+
+      {/* Stats row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Classes', value: classes.length, Icon: BookOpen, cls: 'text-violet-600 bg-violet-50' },
+          { label: 'Total Students', value: totalStudents, Icon: Users, cls: 'text-blue-600 bg-blue-50' },
+          { label: 'Avg Fill Rate', value: `${avgFillPct}%`, Icon: TrendingUp, cls: avgFillPct >= 90 ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50' },
+          { label: 'Need Teacher', value: unassignedCount, Icon: AlertTriangle, cls: unassignedCount > 0 ? 'text-amber-600 bg-amber-50' : 'text-gray-400 bg-gray-50' },
+        ].map(({ label, value, Icon, cls }) => (
+          <div key={label} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
+            <div className={`p-2 rounded-lg ${cls}`}><Icon className="w-5 h-5" /></div>
+            <div>
+              <p className="text-xs text-gray-500">{label}</p>
+              <p className="text-xl font-bold text-gray-800">{value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-gray-900">Classes</h2>
         <button onClick={openAdd} className="flex items-center gap-1.5 px-4 py-2 bg-violet-600 text-white rounded-lg text-sm font-medium hover:bg-violet-700">
           <Plus className="w-4 h-4" /> Add Class
         </button>
       </div>
-      <div className="relative max-w-xs">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input placeholder="Search classes..." value={search} onChange={e => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+
+      <div className="flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-40 max-w-xs">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input placeholder="Search classes..." value={search} onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-violet-500" />
+        </div>
+        <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
+          <option value="">All levels</option>
+          {LEVEL_ORDER.map(l => <option key={l} value={l}>{LEVEL_LABELS[l]}</option>)}
+        </select>
       </div>
+
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {loading ? (
-          <div className="flex justify-center items-center py-16"><div className="w-8 h-8 border-4 border-violet-300 border-t-violet-600 rounded-full animate-spin" /></div>
+          <div className="flex justify-center items-center py-16">
+            <div className="w-8 h-8 border-4 border-violet-300 border-t-violet-600 rounded-full animate-spin" />
+          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -141,47 +208,131 @@ export default function ClassesSection({ profile: _profile }: Props) {
                   <th className="py-3 px-4">Class</th>
                   <th className="py-3 px-4">Level</th>
                   <th className="py-3 px-4">Teacher</th>
-                  <th className="py-3 px-4">Students</th>
+                  <th className="py-3 px-4">Enrollment</th>
                   <th className="py-3 px-4">Year</th>
                   <th className="py-3 px-4">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(c => (
-                  <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
-                    <td className="py-3 px-4 font-medium text-gray-800">{c.name}</td>
-                    <td className="py-3 px-4 text-gray-600">{LEVEL_LABELS[c.level]}</td>
-                    <td className="py-3 px-4 text-gray-600">
-                      {c.profiles ? `${c.profiles.first_name} ${c.profiles.last_name}` : '—'}
-                    </td>
-                    <td className="py-3 px-4 text-gray-600">{c.student_count ?? 0}</td>
-                    <td className="py-3 px-4 text-gray-500 text-xs">{c.academic_year}</td>
-                    <td className="py-3 px-4">
-                      <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-violet-50 rounded-lg text-violet-500" title="Edit"><Edit2 className="w-4 h-4" /></button>
-                      <button onClick={() => setDeleteTarget(c)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
-                    </td>
-                  </tr>
-                ))}
-                {filtered.length === 0 && <tr><td colSpan={6} className="text-center py-10 text-gray-400">No classes found</td></tr>}
+                {filtered.map(c => {
+                  const count = c.student_count || 0;
+                  const cap = c.capacity || 0;
+                  const pct = cap > 0 ? Math.min(100, Math.round((count / cap) * 100)) : 0;
+                  return (
+                    <tr key={c.id} className="border-b border-gray-50 hover:bg-gray-50">
+                      <td className="py-3 px-4 font-medium text-gray-800">{c.name}</td>
+                      <td className="py-3 px-4">
+                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-violet-50 text-violet-700">{LEVEL_LABELS[c.level]}</span>
+                      </td>
+                      <td className="py-3 px-4 text-gray-600">
+                        {c.profiles
+                          ? `${c.profiles.first_name} ${c.profiles.last_name}`
+                          : <span className="text-amber-600 text-xs font-medium">Not assigned</span>}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all ${fillBarColor(count, cap)}`} style={{ width: `${pct}%` }} />
+                          </div>
+                          <span className="text-gray-600 text-xs tabular-nums">{count}/{cap}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-gray-500 text-xs">{c.academic_year}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => openRoster(c)} className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-500" title="View Roster">
+                            <Users className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-violet-50 rounded-lg text-violet-500" title="Edit">
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => setDeleteTarget(c)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500" title="Delete">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={6} className="text-center py-10 text-gray-400">No classes found</td></tr>
+                )}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {deleteTarget && (
+      {/* Roster modal */}
+      {rosterClass && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="font-bold text-gray-800 text-lg mb-2">Delete Class</h3>
-            <p className="text-sm text-gray-600 mb-5">Delete <span className="font-semibold">{deleteTarget.name}</span>? Students in this class will be unassigned. This cannot be undone.</p>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-700">Cancel</button>
-              <button onClick={deleteClass} disabled={deleting} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">{deleting ? 'Deleting...' : 'Delete'}</button>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 flex-shrink-0">
+              <div>
+                <h3 className="font-bold text-gray-800 text-lg">{rosterClass.name} — Class Roster</h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {rosterClass.student_count ?? 0} of {rosterClass.capacity ?? 0} enrolled
+                  {rosterClass.profiles ? ` · ${rosterClass.profiles.first_name} ${rosterClass.profiles.last_name}` : ''}
+                </p>
+              </div>
+              <button onClick={() => setRosterClass(null)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 p-2">
+              {rosterLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-6 h-6 border-4 border-violet-300 border-t-violet-600 rounded-full animate-spin" />
+                </div>
+              ) : roster.length === 0 ? (
+                <p className="text-center text-gray-400 py-12 text-sm">No active students enrolled in this class.</p>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-xs text-gray-500 uppercase border-b border-gray-100">
+                      <th className="py-2 px-3">#</th>
+                      <th className="py-2 px-3">Student ID</th>
+                      <th className="py-2 px-3">Name</th>
+                      <th className="py-2 px-3">Gender</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {roster.map((s, i) => (
+                      <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50">
+                        <td className="py-2 px-3 text-gray-400 text-xs">{i + 1}</td>
+                        <td className="py-2 px-3 font-mono text-xs text-gray-500">{s.student_id}</td>
+                        <td className="py-2 px-3 font-medium text-gray-800">{s.profiles?.first_name} {s.profiles?.last_name}</td>
+                        <td className="py-2 px-3 text-gray-500 capitalize text-xs">{s.gender || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         </div>
       )}
 
+      {/* Delete confirm */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Delete Class</h3>
+            <p className="text-sm text-gray-600 mb-5">
+              Delete <span className="font-semibold">{deleteTarget.name}</span>?
+              Students in this class will be unassigned. This cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+              <button onClick={deleteClass} disabled={deleting} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add / Edit modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
@@ -199,7 +350,7 @@ export default function ClassesSection({ profile: _profile }: Props) {
                 <label className="block text-xs font-medium text-gray-600 mb-1">Level</label>
                 <select value={form.level} onChange={e => setForm(f => ({ ...f, level: e.target.value as ClassLevel }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
-                  {(Object.keys(LEVEL_LABELS) as ClassLevel[]).map(l => <option key={l} value={l}>{LEVEL_LABELS[l]}</option>)}
+                  {LEVEL_ORDER.map(l => <option key={l} value={l}>{LEVEL_LABELS[l]}</option>)}
                 </select>
               </div>
               <div>
@@ -213,7 +364,9 @@ export default function ClassesSection({ profile: _profile }: Props) {
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500">
                   <option value="">No teacher assigned</option>
                   {teachers.map(t => (
-                    <option key={t.id} value={t.profile_id}>{t.profiles ? `${t.profiles.first_name} ${t.profiles.last_name}` : t.profile_id}</option>
+                    <option key={t.id} value={t.profile_id}>
+                      {t.profiles ? `${t.profiles.first_name} ${t.profiles.last_name}` : t.profile_id}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -225,7 +378,9 @@ export default function ClassesSection({ profile: _profile }: Props) {
             </div>
             <div className="flex gap-3 p-5 border-t border-gray-100">
               <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button onClick={save} disabled={saving} className="flex-1 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
+              <button onClick={save} disabled={saving} className="flex-1 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-medium hover:bg-violet-700 disabled:opacity-50">
+                {saving ? 'Saving...' : 'Save'}
+              </button>
             </div>
           </div>
         </div>

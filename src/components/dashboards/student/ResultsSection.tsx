@@ -6,6 +6,7 @@ import { useStudentData } from './useStudentData';
 import ResultCard, { getNigerianGrade, printResultCard } from '../admin/ResultCard';
 import type { ResultCardData, SubjectResult } from '../admin/ResultCard';
 import type { ProfileRow, GradeRow } from '../../../lib/supabase';
+import PerformanceChart from '../shared/PerformanceChart';
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
 
@@ -194,10 +195,18 @@ export default function StudentResultsSection({ profile }: Props) {
           <p className="text-xs mt-1">Results will appear here once your teacher publishes them.</p>
         </div>
       ) : cardData ? (
-        <ResultCard
-          data={cardData}
-          onPrint={() => printResultCard(`${profile.first_name} ${profile.last_name}`)}
-        />
+        <>
+          <ResultCard
+            data={cardData}
+            onPrint={() => printResultCard(`${profile.first_name} ${profile.last_name}`)}
+          />
+          {subjects.length > 0 && (
+            <PerformanceChart
+              subjects={subjects}
+              title={`${selectedTerm} · ${academicYear} — Subject Performance`}
+            />
+          )}
+        </>
       ) : null}
     </div>
   );
