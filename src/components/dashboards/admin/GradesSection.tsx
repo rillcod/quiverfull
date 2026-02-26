@@ -25,7 +25,11 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
   );
 }
 
-const ASSESSMENT_TYPES = ['Test', 'CA', 'Exam', 'Project', 'Assignment', 'Quiz'];
+// Nigerian assessment types (1st CA + 2nd CA + Exam = 100)
+const ASSESSMENT_TYPES = ['1st CA', '2nd CA', 'Exam', 'Test', 'CA', 'Project', 'Assignment', 'Quiz'];
+
+// Default max scores by assessment type
+const DEFAULT_MAX: Record<string, number> = { '1st CA': 20, '2nd CA': 20, 'Exam': 60, 'Test': 30 };
 
 export default function GradesSection({ profile }: Props) {
   const [grades, setGrades] = useState<GradeWithStudent[]>([]);
@@ -38,7 +42,7 @@ export default function GradesSection({ profile }: Props) {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    student_id: '', subject: '', assessment_type: 'Test', score: '', max_score: '100',
+    student_id: '', subject: '', assessment_type: '1st CA', score: '', max_score: '20',
     term: 'First Term' as string, academic_year: getDefaultAcademicYear(),
   });
 
@@ -77,7 +81,7 @@ export default function GradesSection({ profile }: Props) {
   };
 
   const openAdd = () => {
-    setForm({ student_id: '', subject: '', assessment_type: 'Test', score: '', max_score: '100', term: 'First Term' as string, academic_year: getDefaultAcademicYear() });
+    setForm({ student_id: '', subject: '', assessment_type: '1st CA', score: '', max_score: '20', term: 'First Term' as string, academic_year: getDefaultAcademicYear() });
     setShowModal(true);
   };
 
@@ -191,9 +195,14 @@ export default function GradesSection({ profile }: Props) {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Assessment Type</label>
-                <select value={form.assessment_type} onChange={e => setForm(f => ({ ...f, assessment_type: e.target.value }))}
+                <select value={form.assessment_type}
+                  onChange={e => {
+                    const type = e.target.value;
+                    const defaultMax = DEFAULT_MAX[type];
+                    setForm(f => ({ ...f, assessment_type: type, ...(defaultMax ? { max_score: String(defaultMax) } : {}) }));
+                  }}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
-                  {ASSESSMENT_TYPES.map(t => <option key={t}>{t}</option>)}
+                  {ASSESSMENT_TYPES.map(t => <option key={t}>{t}{DEFAULT_MAX[t] ? ` (max ${DEFAULT_MAX[t]})` : ''}</option>)}
                 </select>
               </div>
               <div className="grid grid-cols-2 gap-3">

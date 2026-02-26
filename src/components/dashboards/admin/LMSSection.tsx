@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Monitor, BookOpen, FileText, Plus, X, Search } from 'lucide-react';
+import { Monitor, BookOpen, FileText, Plus, X, Search, Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { TERMS, getDefaultAcademicYear } from '../../../lib/academicConfig';
 import type { ProfileRow, CourseRow, CourseInsert, AssignmentRow, AssignmentInsert, AssignmentType, ClassRow } from '../../../lib/supabase';
@@ -30,6 +30,8 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
 }
 
 const ASSIGNMENT_TYPES: AssignmentType[] = ['homework', 'quiz', 'exam', 'project', 'classwork'];
+const emptyCourseForm = { subject: '', title: '', description: '', class_id: '', teacher_id: '', term: 'First Term' as string, academic_year: getDefaultAcademicYear() };
+const emptyAssignForm = { course_id: '', title: '', description: '', due_date: '', max_score: '100', type: 'homework' as AssignmentType };
 
 export default function LMSSection({ profile }: Props) {
   const [courses, setCourses] = useState<CourseWithClass[]>([]);
@@ -40,12 +42,21 @@ export default function LMSSection({ profile }: Props) {
   const [tab, setTab] = useState<'courses' | 'assignments'>('courses');
   const [search, setSearch] = useState('');
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
-
-  const [showAddCourse, setShowAddCourse] = useState(false);
-  const [courseForm, setCourseForm] = useState({ subject: '', title: '', description: '', class_id: '', teacher_id: '', term: 'First Term' as string, academic_year: getDefaultAcademicYear() });
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [assignForm, setAssignForm] = useState({ course_id: '', title: '', description: '', due_date: '', max_score: '100', type: 'homework' as AssignmentType });
   const [saving, setSaving] = useState(false);
+
+  // Course modal
+  const [showCourseModal, setShowCourseModal] = useState(false);
+  const [editCourse, setEditCourse] = useState<CourseWithClass | null>(null);
+  const [courseForm, setCourseForm] = useState(emptyCourseForm);
+  const [deleteCourse, setDeleteCourse] = useState<CourseWithClass | null>(null);
+  const [deletingCourse, setDeletingCourse] = useState(false);
+
+  // Assignment modal
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [editAssignment, setEditAssignment] = useState<AssignmentWithCourse | null>(null);
+  const [assignForm, setAssignForm] = useState(emptyAssignForm);
+  const [deleteAssignment, setDeleteAssignment] = useState<AssignmentWithCourse | null>(null);
+  const [deletingAssign, setDeletingAssign] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -71,48 +82,116 @@ export default function LMSSection({ profile }: Props) {
     !search || a.title.toLowerCase().includes(search.toLowerCase())
   );
 
-  const addCourse = async () => {
+  // Course CRUD
+  const openAddCourse = () => { setEditCourse(null); setCourseForm(emptyCourseForm); setShowCourseModal(true); };
+  const openEditCourse = (c: CourseWithClass) => {
+    setEditCourse(c);
+    setCourseForm({ subject: c.subject, title: c.title, description: c.description || '', class_id: c.class_id || '', teacher_id: c.teacher_id || '', term: c.term, academic_year: c.academic_year });
+    setShowCourseModal(true);
+  };
+
+  const saveCourse = async () => {
     if (!courseForm.subject.trim() || !courseForm.title.trim()) return setToast({ msg: 'Subject and title are required', type: 'error' });
     setSaving(true);
     try {
-      const payload: CourseInsert = {
-        subject: courseForm.subject.trim(), title: courseForm.title.trim(),
-        description: courseForm.description.trim() || null,
-        class_id: courseForm.class_id || null,
-        teacher_id: courseForm.teacher_id || null,
-        term: courseForm.term, academic_year: courseForm.academic_year,
-      };
-      await supabase.from('courses').insert(payload);
-      setToast({ msg: 'Course created', type: 'success' });
-      setShowAddCourse(false);
-      setCourseForm({ subject: '', title: '', description: '', class_id: '', teacher_id: '', term: 'First Term' as string, academic_year: getDefaultAcademicYear() });
+      if (editCourse) {
+        await supabase.from('courses').update({
+          subject: courseForm.subject.trim(), title: courseForm.title.trim(),
+          description: courseForm.description.trim() || null,
+          class_id: courseForm.class_id || null,
+          teacher_id: courseForm.teacher_id || null,
+          term: courseForm.term, academic_year: courseForm.academic_year,
+        }).eq('id', editCourse.id);
+        setToast({ msg: 'Course updated', type: 'success' });
+      } else {
+        const payload: CourseInsert = {
+          subject: courseForm.subject.trim(), title: courseForm.title.trim(),
+          description: courseForm.description.trim() || null,
+          class_id: courseForm.class_id || null,
+          teacher_id: courseForm.teacher_id || null,
+          term: courseForm.term, academic_year: courseForm.academic_year,
+        };
+        await supabase.from('courses').insert(payload);
+        setToast({ msg: 'Course created', type: 'success' });
+      }
+      setShowCourseModal(false);
       fetchData();
     } catch (e: unknown) {
-      setToast({ msg: e instanceof Error ? e.message : 'Failed to create course', type: 'error' });
+      setToast({ msg: e instanceof Error ? e.message : 'Failed to save course', type: 'error' });
     }
     setSaving(false);
   };
 
-  const addAssignment = async () => {
+  const confirmDeleteCourse = async () => {
+    if (!deleteCourse) return;
+    setDeletingCourse(true);
+    try {
+      await supabase.from('courses').update({ is_active: false }).eq('id', deleteCourse.id);
+      setToast({ msg: 'Course removed', type: 'success' });
+      setDeleteCourse(null);
+      fetchData();
+    } catch (e: unknown) {
+      setToast({ msg: e instanceof Error ? e.message : 'Delete failed', type: 'error' });
+    }
+    setDeletingCourse(false);
+  };
+
+  // Assignment CRUD
+  const openAddAssign = () => { setEditAssignment(null); setAssignForm(emptyAssignForm); setShowAssignModal(true); };
+  const openEditAssign = (a: AssignmentWithCourse) => {
+    setEditAssignment(a);
+    setAssignForm({
+      course_id: a.course_id, title: a.title, description: a.description || '',
+      due_date: a.due_date ? new Date(a.due_date).toISOString().slice(0, 16) : '',
+      max_score: String(a.max_score ?? 100), type: a.type,
+    });
+    setShowAssignModal(true);
+  };
+
+  const saveAssignment = async () => {
     if (!assignForm.course_id || !assignForm.title.trim()) return setToast({ msg: 'Course and title are required', type: 'error' });
     setSaving(true);
     try {
-      const payload: AssignmentInsert = {
-        course_id: assignForm.course_id, title: assignForm.title.trim(),
-        description: assignForm.description.trim() || null,
-        due_date: assignForm.due_date ? new Date(assignForm.due_date).toISOString() : null,
-        max_score: parseFloat(assignForm.max_score) || 100,
-        type: assignForm.type, created_by: profile.id,
-      };
-      await supabase.from('assignments').insert(payload);
-      setToast({ msg: 'Assignment created', type: 'success' });
+      if (editAssignment) {
+        await supabase.from('assignments').update({
+          title: assignForm.title.trim(),
+          description: assignForm.description.trim() || null,
+          due_date: assignForm.due_date ? new Date(assignForm.due_date).toISOString() : null,
+          max_score: parseFloat(assignForm.max_score) || 100,
+          type: assignForm.type,
+        }).eq('id', editAssignment.id);
+        setToast({ msg: 'Assignment updated', type: 'success' });
+      } else {
+        const payload: AssignmentInsert = {
+          course_id: assignForm.course_id, title: assignForm.title.trim(),
+          description: assignForm.description.trim() || null,
+          due_date: assignForm.due_date ? new Date(assignForm.due_date).toISOString() : null,
+          max_score: parseFloat(assignForm.max_score) || 100,
+          type: assignForm.type, created_by: profile.id,
+        };
+        await supabase.from('assignments').insert(payload);
+        setToast({ msg: 'Assignment created', type: 'success' });
+      }
       setShowAssignModal(false);
-      setAssignForm({ course_id: '', title: '', description: '', due_date: '', max_score: '100', type: 'homework' });
       fetchData();
     } catch (e: unknown) {
-      setToast({ msg: e instanceof Error ? e.message : 'Failed to create assignment', type: 'error' });
+      setToast({ msg: e instanceof Error ? e.message : 'Failed to save assignment', type: 'error' });
     }
     setSaving(false);
+  };
+
+  const confirmDeleteAssignment = async () => {
+    if (!deleteAssignment) return;
+    setDeletingAssign(true);
+    try {
+      await supabase.from('assignments').delete().eq('id', deleteAssignment.id);
+      setToast({ msg: 'Assignment deleted', type: 'success' });
+      setDeleteAssignment(null);
+      fetchData();
+    } catch (e: unknown) {
+      setToast({ msg: e instanceof Error ? e.message : 'Delete failed', type: 'error' });
+    }
+    setDeletingAssign(false);
   };
 
   return (
@@ -122,12 +201,12 @@ export default function LMSSection({ profile }: Props) {
         <h2 className="text-xl font-bold text-gray-900">LMS – Courses & Assignments</h2>
         <div className="flex gap-2">
           {tab === 'courses' && (
-            <button onClick={() => setShowAddCourse(true)} className="flex items-center gap-1.5 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium hover:bg-pink-700">
+            <button onClick={openAddCourse} className="flex items-center gap-1.5 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium hover:bg-pink-700">
               <Plus className="w-4 h-4" /> Add Course
             </button>
           )}
           {tab === 'assignments' && (
-            <button onClick={() => setShowAssignModal(true)} className="flex items-center gap-1.5 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium hover:bg-pink-700">
+            <button onClick={openAddAssign} className="flex items-center gap-1.5 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium hover:bg-pink-700">
               <Plus className="w-4 h-4" /> Add Assignment
             </button>
           )}
@@ -157,7 +236,7 @@ export default function LMSSection({ profile }: Props) {
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs text-gray-500 uppercase">
                     <th className="py-3 px-4">Course / Subject</th><th className="py-3 px-4">Class</th>
-                    <th className="py-3 px-4">Term</th><th className="py-3 px-4">Year</th>
+                    <th className="py-3 px-4">Term</th><th className="py-3 px-4">Year</th><th className="py-3 px-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -167,9 +246,15 @@ export default function LMSSection({ profile }: Props) {
                       <td className="py-3 px-4 text-gray-600">{c.classes?.name ?? '—'}</td>
                       <td className="py-3 px-4 text-gray-500">{c.term}</td>
                       <td className="py-3 px-4 text-gray-500 text-xs">{c.academic_year}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => openEditCourse(c)} className="p-1.5 hover:bg-yellow-50 rounded-lg text-yellow-500" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteCourse(c)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
-                  {filteredCourses.length === 0 && <tr><td colSpan={4} className="text-center py-10 text-gray-400"><Monitor className="w-8 h-8 mx-auto mb-2 opacity-40" />No courses found</td></tr>}
+                  {filteredCourses.length === 0 && <tr><td colSpan={5} className="text-center py-10 text-gray-400"><Monitor className="w-8 h-8 mx-auto mb-2 opacity-40" />No courses found</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -187,7 +272,7 @@ export default function LMSSection({ profile }: Props) {
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs text-gray-500 uppercase">
                     <th className="py-3 px-4">Title</th><th className="py-3 px-4">Course</th>
-                    <th className="py-3 px-4">Type</th><th className="py-3 px-4">Max Score</th><th className="py-3 px-4">Due Date</th>
+                    <th className="py-3 px-4">Type</th><th className="py-3 px-4">Max Score</th><th className="py-3 px-4">Due Date</th><th className="py-3 px-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -198,9 +283,15 @@ export default function LMSSection({ profile }: Props) {
                       <td className="py-3 px-4 text-gray-600 capitalize">{a.type}</td>
                       <td className="py-3 px-4 text-gray-600">{a.max_score ?? 100}</td>
                       <td className="py-3 px-4 text-gray-500">{a.due_date ? new Date(a.due_date).toLocaleDateString() : '—'}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => openEditAssign(a)} className="p-1.5 hover:bg-yellow-50 rounded-lg text-yellow-500" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteAssignment(a)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
-                  {filteredAssignments.length === 0 && <tr><td colSpan={5} className="text-center py-10 text-gray-400">No assignments found</td></tr>}
+                  {filteredAssignments.length === 0 && <tr><td colSpan={6} className="text-center py-10 text-gray-400">No assignments found</td></tr>}
                 </tbody>
               </table>
             </div>
@@ -208,13 +299,13 @@ export default function LMSSection({ profile }: Props) {
         </div>
       )}
 
-      {/* Add Course Modal */}
-      {showAddCourse && (
+      {/* Course Modal */}
+      {showCourseModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-bold text-gray-800 text-lg">Add Course</h3>
-              <button onClick={() => setShowAddCourse(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+              <h3 className="font-bold text-gray-800 text-lg">{editCourse ? 'Edit Course' : 'Add Course'}</h3>
+              <button onClick={() => setShowCourseModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="p-5 space-y-3">
               <div>
@@ -253,7 +344,7 @@ export default function LMSSection({ profile }: Props) {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Term</label>
-                  <select value={courseForm.term} onChange={e => setCourseForm(f => ({ ...f, term: e.target.value as typeof TERMS[number] }))}
+                  <select value={courseForm.term} onChange={e => setCourseForm(f => ({ ...f, term: e.target.value }))}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
                     {TERMS.map(t => <option key={t}>{t}</option>)}
                   </select>
@@ -266,26 +357,27 @@ export default function LMSSection({ profile }: Props) {
               </div>
             </div>
             <div className="flex gap-3 p-5 border-t border-gray-100">
-              <button onClick={() => setShowAddCourse(false)} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button onClick={addCourse} disabled={saving} className="flex-1 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700 disabled:opacity-50">{saving ? 'Saving...' : 'Create Course'}</button>
+              <button onClick={() => setShowCourseModal(false)} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+              <button onClick={saveCourse} disabled={saving} className="flex-1 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700 disabled:opacity-50">{saving ? 'Saving...' : editCourse ? 'Update' : 'Create Course'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Add Assignment Modal */}
+      {/* Assignment Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-bold text-gray-800 text-lg">Add Assignment</h3>
+              <h3 className="font-bold text-gray-800 text-lg">{editAssignment ? 'Edit Assignment' : 'Add Assignment'}</h3>
               <button onClick={() => setShowAssignModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="p-5 space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Course *</label>
                 <select value={assignForm.course_id} onChange={e => setAssignForm(f => ({ ...f, course_id: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  disabled={!!editAssignment}>
                   <option value="">Select course...</option>
                   {courses.map(c => <option key={c.id} value={c.id}>{c.subject} – {c.title}</option>)}
                 </select>
@@ -322,7 +414,35 @@ export default function LMSSection({ profile }: Props) {
             </div>
             <div className="flex gap-3 p-5 border-t border-gray-100">
               <button onClick={() => setShowAssignModal(false)} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button onClick={addAssignment} disabled={saving} className="flex-1 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700 disabled:opacity-50">{saving ? 'Saving...' : 'Create'}</button>
+              <button onClick={saveAssignment} disabled={saving} className="flex-1 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700 disabled:opacity-50">{saving ? 'Saving...' : editAssignment ? 'Update' : 'Create'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Course Confirm */}
+      {deleteCourse && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Remove Course</h3>
+            <p className="text-sm text-gray-600 mb-5">Remove course "<span className="font-semibold">{deleteCourse.title}</span>"?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteCourse(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-700">Cancel</button>
+              <button onClick={confirmDeleteCourse} disabled={deletingCourse} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">{deletingCourse ? 'Removing...' : 'Remove'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Assignment Confirm */}
+      {deleteAssignment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Delete Assignment</h3>
+            <p className="text-sm text-gray-600 mb-5">Delete "<span className="font-semibold">{deleteAssignment.title}</span>"?</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteAssignment(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-700">Cancel</button>
+              <button onClick={confirmDeleteAssignment} disabled={deletingAssign} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">{deletingAssign ? 'Deleting...' : 'Delete'}</button>
             </div>
           </div>
         </div>

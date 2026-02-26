@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, X, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Search } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { getDefaultAcademicYear } from '../../../lib/academicConfig';
 import type { ProfileRow, ClassRow, ClassInsert, ClassLevel } from '../../../lib/supabase';
@@ -36,10 +36,13 @@ export default function ClassesSection({ profile: _profile }: Props) {
     name: '', level: 'basic1', academic_year: getDefaultAcademicYear(), teacher_id: '', capacity: '25',
   });
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ClassWithProfile | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
-    const { data: classData } = await supabase.from('classes').select('*, profiles:teacher_id(first_name, last_name)').order('name');
+    const { data: classData, error: classErr } = await supabase.from('classes').select('*, profiles:teacher_id(first_name, last_name)').order('name');
+    if (classErr) { setToast({ msg: classErr.message, type: 'error' }); setLoading(false); return; }
     const { data: countData } = await supabase.from('students').select('class_id').eq('is_active', true);
     const countByClass: Record<string, number> = {};
     (countData || []).forEach((s: { class_id: string | null }) => {
@@ -88,10 +91,12 @@ export default function ClassesSection({ profile: _profile }: Props) {
         capacity: parseInt(form.capacity, 10) || 25,
       };
       if (editing) {
-        await supabase.from('classes').update(payload).eq('id', editing.id);
+        const { error } = await supabase.from('classes').update(payload).eq('id', editing.id);
+        if (error) throw error;
         setToast({ msg: 'Class updated', type: 'success' });
       } else {
-        await supabase.from('classes').insert(payload);
+        const { error } = await supabase.from('classes').insert(payload);
+        if (error) throw error;
         setToast({ msg: 'Class created', type: 'success' });
       }
       setShowModal(false);
@@ -100,6 +105,15 @@ export default function ClassesSection({ profile: _profile }: Props) {
       setToast({ msg: e instanceof Error ? e.message : 'Failed to save', type: 'error' });
     }
     setSaving(false);
+  };
+
+  const deleteClass = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    const { error } = await supabase.from('classes').delete().eq('id', deleteTarget.id);
+    if (error) setToast({ msg: error.message, type: 'error' });
+    else { setToast({ msg: 'Class deleted', type: 'success' }); setDeleteTarget(null); fetchData(); }
+    setDeleting(false);
   };
 
   return (
@@ -144,6 +158,7 @@ export default function ClassesSection({ profile: _profile }: Props) {
                     <td className="py-3 px-4 text-gray-500 text-xs">{c.academic_year}</td>
                     <td className="py-3 px-4">
                       <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-violet-50 rounded-lg text-violet-500" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                      <button onClick={() => setDeleteTarget(c)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
                     </td>
                   </tr>
                 ))}
@@ -153,6 +168,19 @@ export default function ClassesSection({ profile: _profile }: Props) {
           </div>
         )}
       </div>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Delete Class</h3>
+            <p className="text-sm text-gray-600 mb-5">Delete <span className="font-semibold">{deleteTarget.name}</span>? Students in this class will be unassigned. This cannot be undone.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-700">Cancel</button>
+              <button onClick={deleteClass} disabled={deleting} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">{deleting ? 'Deleting...' : 'Delete'}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">

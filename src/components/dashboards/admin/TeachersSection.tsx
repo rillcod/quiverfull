@@ -28,6 +28,34 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
   );
 }
 
+function TeacherModal({ title, onClose, onSave, saving, children }: { title: string; onClose: () => void; onSave: () => void; saving: boolean; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <h3 className="font-bold text-gray-800 text-lg">{title}</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+        </div>
+        <div className="p-5 space-y-3">{children}</div>
+        <div className="flex gap-3 p-5 border-t border-gray-100">
+          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button onClick={onSave} disabled={saving} className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TeacherFormField({ label, field, type = 'text', required = false, form, setForm }: { label: string; field: keyof TeacherForm; type?: string; required?: boolean; form: TeacherForm; setForm: React.Dispatch<React.SetStateAction<TeacherForm>> }) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}{required && ' *'}</label>
+      <input type={type} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+    </div>
+  );
+}
+
 const emptyForm: TeacherForm = { first_name: '', last_name: '', email: '', phone: '', qualification: '', specialization: '', hire_date: '' };
 
 export default function TeachersSection({ profile }: Props) {
@@ -74,12 +102,13 @@ export default function TeachersSection({ profile }: Props) {
     setSaving(true);
     try {
       const tempPassword = generateTempPassword();
-      const { data: fnData, error: fnError } = await supabase.functions.invoke('create-user', {
-        body: { email: form.email, password: tempPassword, first_name: form.first_name, last_name: form.last_name },
+      const { data: userId, error: fnError } = await supabase.rpc('admin_create_user', {
+        user_email: form.email,
+        user_password: tempPassword,
+        user_first_name: form.first_name,
+        user_last_name: form.last_name,
       });
       if (fnError) throw fnError;
-      if (fnData?.error) throw new Error(fnData.error);
-      const userId: string = fnData.user_id;
       const { data: prof, error: pErr } = await supabase.from('profiles').insert({
         user_id: userId,
         email: form.email,
@@ -89,20 +118,21 @@ export default function TeachersSection({ profile }: Props) {
         role: 'teacher',
       }).select().single();
       if (pErr) throw pErr;
-      await supabase.from('teachers').insert({
+      const { error: tErr } = await supabase.from('teachers').insert({
         profile_id: prof.id,
         employee_id: generateEmployeeId(),
         qualification: form.qualification || null,
         specialization: form.specialization || null,
         hire_date: form.hire_date || new Date().toISOString().split('T')[0],
       });
+      if (tErr) throw tErr;
       setShowAdd(false);
       setForm(emptyForm);
       setCredentialsModal({ email: form.email, password: tempPassword });
       fetchTeachers();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Failed to add teacher';
-      setToast({ msg: msg.includes('already registered') ? 'A user with this email already exists' : msg, type: 'error' });
+      const msg = (e as { message?: string })?.message || 'Failed to add teacher';
+      setToast({ msg: msg.includes('already registered') || msg.includes('already exists') ? 'A user with this email already exists' : msg, type: 'error' });
     }
     setSaving(false);
   };
@@ -123,7 +153,7 @@ export default function TeachersSection({ profile }: Props) {
       }).eq('id', editTarget.id);
       setToast({ msg: 'Teacher updated', type: 'success' });
       setShowEdit(false); fetchTeachers();
-    } catch (e: unknown) { setToast({ msg: e instanceof Error ? e.message : 'Update failed', type: 'error' }); }
+    } catch (e: unknown) { setToast({ msg: (e as { message?: string })?.message || 'Update failed', type: 'error' }); }
     setSaving(false);
   };
 
@@ -154,30 +184,6 @@ export default function TeachersSection({ profile }: Props) {
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   };
-
-  const Modal = ({ title, onClose, onSave, children }: { title: string; onClose: () => void; onSave: () => void; children: React.ReactNode }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="font-bold text-gray-800 text-lg">{title}</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
-        </div>
-        <div className="p-5 space-y-3">{children}</div>
-        <div className="flex gap-3 p-5 border-t border-gray-100">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-          <button onClick={onSave} disabled={saving} className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const FormField = ({ label, field, type = 'text', required = false }: { label: string; field: keyof TeacherForm; type?: string; required?: boolean }) => (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}{required && ' *'}</label>
-      <input type={type} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
-    </div>
-  );
 
   return (
     <div className="space-y-5">
@@ -318,24 +324,24 @@ export default function TeachersSection({ profile }: Props) {
         </div>
       )}
       {showAdd && (
-        <Modal title="Add New Teacher" onClose={() => setShowAdd(false)} onSave={addTeacher}>
-          <div className="grid grid-cols-2 gap-3"><FormField label="First Name" field="first_name" required /><FormField label="Last Name" field="last_name" required /></div>
-          <FormField label="Email" field="email" type="email" required />
-          <FormField label="Phone" field="phone" />
-          <FormField label="Qualification" field="qualification" />
-          <FormField label="Specialization" field="specialization" />
-          <FormField label="Hire Date" field="hire_date" type="date" />
-        </Modal>
+        <TeacherModal title="Add New Teacher" onClose={() => setShowAdd(false)} onSave={addTeacher} saving={saving}>
+          <div className="grid grid-cols-2 gap-3"><TeacherFormField label="First Name" field="first_name" required form={form} setForm={setForm} /><TeacherFormField label="Last Name" field="last_name" required form={form} setForm={setForm} /></div>
+          <TeacherFormField label="Email" field="email" type="email" required form={form} setForm={setForm} />
+          <TeacherFormField label="Phone" field="phone" form={form} setForm={setForm} />
+          <TeacherFormField label="Qualification" field="qualification" form={form} setForm={setForm} />
+          <TeacherFormField label="Specialization" field="specialization" form={form} setForm={setForm} />
+          <TeacherFormField label="Hire Date" field="hire_date" type="date" form={form} setForm={setForm} />
+        </TeacherModal>
       )}
       {showEdit && (
-        <Modal title="Edit Teacher" onClose={() => setShowEdit(false)} onSave={updateTeacher}>
-          <div className="grid grid-cols-2 gap-3"><FormField label="First Name" field="first_name" required /><FormField label="Last Name" field="last_name" required /></div>
-          <FormField label="Email" field="email" type="email" required />
-          <FormField label="Phone" field="phone" />
-          <FormField label="Qualification" field="qualification" />
-          <FormField label="Specialization" field="specialization" />
-          <FormField label="Hire Date" field="hire_date" type="date" />
-        </Modal>
+        <TeacherModal title="Edit Teacher" onClose={() => setShowEdit(false)} onSave={updateTeacher} saving={saving}>
+          <div className="grid grid-cols-2 gap-3"><TeacherFormField label="First Name" field="first_name" required form={form} setForm={setForm} /><TeacherFormField label="Last Name" field="last_name" required form={form} setForm={setForm} /></div>
+          <TeacherFormField label="Email" field="email" type="email" required form={form} setForm={setForm} />
+          <TeacherFormField label="Phone" field="phone" form={form} setForm={setForm} />
+          <TeacherFormField label="Qualification" field="qualification" form={form} setForm={setForm} />
+          <TeacherFormField label="Specialization" field="specialization" form={form} setForm={setForm} />
+          <TeacherFormField label="Hire Date" field="hire_date" type="date" form={form} setForm={setForm} />
+        </TeacherModal>
       )}
     </div>
   );

@@ -34,6 +34,34 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
   );
 }
 
+function StudentModal({ title, onClose, onSave, saving, children }: { title: string; onClose: () => void; onSave: () => void; saving: boolean; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-gray-100">
+          <h3 className="font-bold text-gray-800 text-lg">{title}</h3>
+          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
+        </div>
+        <div className="p-5 space-y-3">{children}</div>
+        <div className="flex gap-3 p-5 border-t border-gray-100">
+          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button onClick={onSave} disabled={saving} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StudentFormField({ label, field, type = 'text', required = false, form, setForm }: { label: string; field: keyof StudentForm; type?: string; required?: boolean; form: StudentForm; setForm: React.Dispatch<React.SetStateAction<StudentForm>> }) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}{required && ' *'}</label>
+      <input type={type} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value } as StudentForm))}
+        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    </div>
+  );
+}
+
 const emptyForm: StudentForm = { first_name: '', last_name: '', email: '', phone: '', gender: '', date_of_birth: '', class_id: '', address: '', emergency_contact: '', emergency_phone: '' };
 
 export default function StudentsSection({ profile: _profile }: Props) {
@@ -92,12 +120,13 @@ export default function StudentsSection({ profile: _profile }: Props) {
     setSaving(true);
     try {
       const tempPassword = generateTempPassword();
-      const { data: fnData, error: fnError } = await supabase.functions.invoke('create-user', {
-        body: { email: form.email, password: tempPassword, first_name: form.first_name, last_name: form.last_name },
+      const { data: userId, error: fnError } = await supabase.rpc('admin_create_user', {
+        user_email: form.email,
+        user_password: tempPassword,
+        user_first_name: form.first_name,
+        user_last_name: form.last_name,
       });
       if (fnError) throw fnError;
-      if (fnData?.error) throw new Error(fnData.error);
-      const userId: string = fnData.user_id;
       const { data: profile, error: pErr } = await supabase.from('profiles').insert({
         user_id: userId,
         email: form.email,
@@ -123,8 +152,8 @@ export default function StudentsSection({ profile: _profile }: Props) {
       setCredentialsModal({ email: form.email, password: tempPassword });
       fetchStudents();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Failed to add student';
-      setToast({ msg: msg.includes('already registered') ? 'A user with this email already exists' : msg, type: 'error' });
+      const msg = (e as { message?: string })?.message || 'Failed to add student';
+      setToast({ msg: msg.includes('already registered') || msg.includes('already exists') ? 'A user with this email already exists' : msg, type: 'error' });
     }
     setSaving(false);
   };
@@ -142,7 +171,7 @@ export default function StudentsSection({ profile: _profile }: Props) {
       await supabase.from('students').update({ class_id: form.class_id || null, gender: (form.gender || null) as StudentRow['gender'], date_of_birth: form.date_of_birth || null, address: form.address || null, emergency_contact: form.emergency_contact || null, emergency_phone: form.emergency_phone || null }).eq('id', editTarget.id);
       setToast({ msg: 'Student updated', type: 'success' });
       setShowEdit(false); fetchStudents();
-    } catch (e: unknown) { setToast({ msg: e instanceof Error ? e.message : 'Update failed', type: 'error' }); }
+    } catch (e: unknown) { setToast({ msg: (e as { message?: string })?.message || 'Update failed', type: 'error' }); }
     setSaving(false);
   };
 
@@ -171,30 +200,6 @@ export default function StudentsSection({ profile: _profile }: Props) {
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   };
-
-  const Modal = ({ title, onClose, onSave, children }: { title: string; onClose: () => void; onSave: () => void; children: React.ReactNode }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h3 className="font-bold text-gray-800 text-lg">{title}</h3>
-          <button onClick={onClose} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
-        </div>
-        <div className="p-5 space-y-3">{children}</div>
-        <div className="flex gap-3 p-5 border-t border-gray-100">
-          <button onClick={onClose} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-          <button onClick={onSave} disabled={saving} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>
-        </div>
-      </div>
-    </div>
-  );
-
-  const FormField = ({ label, field, type = 'text', required = false }: { label: string; field: keyof StudentForm; type?: string; required?: boolean }) => (
-    <div>
-      <label className="block text-xs font-medium text-gray-600 mb-1">{label}{required && ' *'}</label>
-      <input type={type} value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value } as StudentForm))}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-    </div>
-  );
 
   return (
     <div className="space-y-5">
@@ -331,13 +336,13 @@ export default function StudentsSection({ profile: _profile }: Props) {
 
       {/* Add modal */}
       {showAdd && (
-        <Modal title="Add New Student" onClose={() => setShowAdd(false)} onSave={addStudent}>
+        <StudentModal title="Add New Student" onClose={() => setShowAdd(false)} onSave={addStudent} saving={saving}>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="First Name" field="first_name" required />
-            <FormField label="Last Name" field="last_name" required />
+            <StudentFormField label="First Name" field="first_name" required form={form} setForm={setForm} />
+            <StudentFormField label="Last Name" field="last_name" required form={form} setForm={setForm} />
           </div>
-          <FormField label="Email" field="email" type="email" required />
-          <FormField label="Phone" field="phone" />
+          <StudentFormField label="Email" field="email" type="email" required form={form} setForm={setForm} />
+          <StudentFormField label="Phone" field="phone" form={form} setForm={setForm} />
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Class</label>
             <select value={form.class_id} onChange={e => setForm(f => ({ ...f, class_id: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -351,13 +356,13 @@ export default function StudentsSection({ profile: _profile }: Props) {
               <option value="">Select...</option><option value="male">Male</option><option value="female">Female</option>
             </select>
           </div>
-          <FormField label="Date of Birth" field="date_of_birth" type="date" />
-          <FormField label="Address" field="address" />
+          <StudentFormField label="Date of Birth" field="date_of_birth" type="date" form={form} setForm={setForm} />
+          <StudentFormField label="Address" field="address" form={form} setForm={setForm} />
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Emergency Contact" field="emergency_contact" />
-            <FormField label="Emergency Phone" field="emergency_phone" />
+            <StudentFormField label="Emergency Contact" field="emergency_contact" form={form} setForm={setForm} />
+            <StudentFormField label="Emergency Phone" field="emergency_phone" form={form} setForm={setForm} />
           </div>
-        </Modal>
+        </StudentModal>
       )}
 
       {/* Credentials modal - copyable temp password */}
@@ -400,13 +405,13 @@ export default function StudentsSection({ profile: _profile }: Props) {
 
       {/* Edit modal */}
       {showEdit && (
-        <Modal title="Edit Student" onClose={() => setShowEdit(false)} onSave={updateStudent}>
+        <StudentModal title="Edit Student" onClose={() => setShowEdit(false)} onSave={updateStudent} saving={saving}>
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="First Name" field="first_name" required />
-            <FormField label="Last Name" field="last_name" required />
+            <StudentFormField label="First Name" field="first_name" required form={form} setForm={setForm} />
+            <StudentFormField label="Last Name" field="last_name" required form={form} setForm={setForm} />
           </div>
-          <FormField label="Email" field="email" type="email" required />
-          <FormField label="Phone" field="phone" />
+          <StudentFormField label="Email" field="email" type="email" required form={form} setForm={setForm} />
+          <StudentFormField label="Phone" field="phone" form={form} setForm={setForm} />
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Class</label>
             <select value={form.class_id} onChange={e => setForm(f => ({ ...f, class_id: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -420,13 +425,13 @@ export default function StudentsSection({ profile: _profile }: Props) {
               <option value="">Select...</option><option value="male">Male</option><option value="female">Female</option>
             </select>
           </div>
-          <FormField label="Date of Birth" field="date_of_birth" type="date" />
-          <FormField label="Address" field="address" />
+          <StudentFormField label="Date of Birth" field="date_of_birth" type="date" form={form} setForm={setForm} />
+          <StudentFormField label="Address" field="address" form={form} setForm={setForm} />
           <div className="grid grid-cols-2 gap-3">
-            <FormField label="Emergency Contact" field="emergency_contact" />
-            <FormField label="Emergency Phone" field="emergency_phone" />
+            <StudentFormField label="Emergency Contact" field="emergency_contact" form={form} setForm={setForm} />
+            <StudentFormField label="Emergency Phone" field="emergency_phone" form={form} setForm={setForm} />
           </div>
-        </Modal>
+        </StudentModal>
       )}
     </div>
   );

@@ -7,6 +7,8 @@ const ALL_TABLES = [
   'profiles', 'classes', 'students', 'teachers', 'parents', 'student_parents',
   'attendance', 'grades', 'fees', 'announcements', 'courses', 'assignments',
   'submissions', 'course_materials', 'events', 'health_records', 'transport', 'school_settings',
+  'result_sheets', 'cbt_exams', 'cbt_questions', 'cbt_sessions', 'cbt_answers',
+  'timetable', 'messages',
 ] as const;
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
@@ -190,7 +192,7 @@ export default function SettingsSection({ profile: _profile }: Props) {
             <RefreshCw className="w-5 h-5 text-gray-500" />
             <h3 className="font-semibold text-gray-800">Database sync status</h3>
           </div>
-          <span className="text-sm text-gray-500">{showDbStatus ? 'Hide' : 'Show'} 18 tables</span>
+          <span className="text-sm text-gray-500">{showDbStatus ? 'Hide' : 'Show'} {ALL_TABLES.length} tables</span>
         </button>
         {showDbStatus && (
           <div className="border-t border-gray-100 p-5">

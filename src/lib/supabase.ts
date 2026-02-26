@@ -101,8 +101,8 @@ export type Database = {
           level: ClassLevel;
           academic_year: string;
           teacher_id: string | null;
-          capacity: number;
-          created_at: string;
+          capacity: number | null;
+          created_at: string | null;
         };
         Insert: {
           id?: string;
@@ -155,7 +155,7 @@ export type Database = {
       attendance: {
         Row: {
           id: string;
-          student_id: string;
+          student_id: string | null;
           date: string;
           status: AttendanceStatus;
           notes: string | null;
@@ -180,7 +180,7 @@ export type Database = {
       grades: {
         Row: {
           id: string;
-          student_id: string;
+          student_id: string | null;
           subject: string;
           assessment_type: string;
           score: number;
@@ -214,11 +214,11 @@ export type Database = {
       fees: {
         Row: {
           id: string;
-          student_id: string;
+          student_id: string | null;
           fee_type: string;
           amount: number;
           due_date: string;
-          paid_amount: number;
+          paid_amount: number | null;
           status: FeeStatus;
           term: string;
           academic_year: string;
@@ -251,11 +251,11 @@ export type Database = {
           id: string;
           title: string;
           content: string;
-          target_audience: string[];
-          priority: AnnouncementPriority;
-          published: boolean;
+          target_audience: string[] | null;
+          priority: AnnouncementPriority | null;
+          published: boolean | null;
           published_by: string | null;
-          created_at: string;
+          created_at: string | null;
           expires_at: string | null;
         };
         Insert: {
@@ -289,8 +289,8 @@ export type Database = {
           teacher_id: string | null;
           term: string;
           academic_year: string;
-          is_active: boolean;
-          created_at: string;
+          is_active: boolean | null;
+          created_at: string | null;
         };
         Insert: {
           id?: string;
@@ -318,14 +318,14 @@ export type Database = {
       assignments: {
         Row: {
           id: string;
-          course_id: string;
+          course_id: string | null;
           title: string;
           description: string | null;
           due_date: string | null;
-          max_score: number;
-          type: AssignmentType;
+          max_score: number | null;
+          type: AssignmentType | null;
           created_by: string | null;
-          created_at: string;
+          created_at: string | null;
         };
         Insert: {
           id?: string;
@@ -454,6 +454,7 @@ export type Database = {
           profile_id: string | null;
           occupation: string | null;
           workplace: string | null;
+          address: string | null;
           relationship_to_student: string | null;
           created_at: string;
         };
@@ -462,12 +463,14 @@ export type Database = {
           profile_id: string;
           occupation?: string | null;
           workplace?: string | null;
+          address?: string | null;
           relationship_to_student?: string | null;
           created_at?: string;
         };
         Update: {
           occupation?: string | null;
           workplace?: string | null;
+          address?: string | null;
           relationship_to_student?: string | null;
         };
       };
@@ -516,6 +519,206 @@ export type Database = {
           recorded_by?: string | null;
         };
       };
+      messages: {
+        Row: {
+          id: string;
+          sender_id: string;
+          recipient_id: string | null;
+          target_role: string | null;
+          subject: string;
+          body: string;
+          is_read: boolean;
+          parent_message_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          sender_id: string;
+          recipient_id?: string | null;
+          target_role?: string | null;
+          subject?: string;
+          body: string;
+          is_read?: boolean;
+          parent_message_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          is_read?: boolean;
+        };
+      };
+      timetable: {
+        Row: {
+          id: string;
+          class_id: string;
+          day_of_week: string;
+          period: number;
+          subject: string;
+          teacher_id: string | null;
+          start_time: string;
+          end_time: string;
+          term: string;
+          academic_year: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          class_id: string;
+          day_of_week: string;
+          period: number;
+          subject: string;
+          teacher_id?: string | null;
+          start_time: string;
+          end_time: string;
+          term?: string;
+          academic_year?: string;
+          created_at?: string;
+        };
+        Update: {
+          subject?: string;
+          teacher_id?: string | null;
+          start_time?: string;
+          end_time?: string;
+          term?: string;
+          academic_year?: string;
+        };
+      };
+      cbt_exams: {
+        Row: {
+          id: string;
+          title: string;
+          subject: string;
+          class_id: string | null;
+          duration_minutes: number;
+          total_marks: number;
+          start_time: string | null;
+          end_time: string | null;
+          term: string;
+          academic_year: string;
+          instructions: string;
+          is_published: boolean;
+          created_by: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          subject: string;
+          class_id?: string | null;
+          duration_minutes?: number;
+          total_marks?: number;
+          start_time?: string | null;
+          end_time?: string | null;
+          term?: string;
+          academic_year?: string;
+          instructions?: string;
+          is_published?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          subject?: string;
+          class_id?: string | null;
+          duration_minutes?: number;
+          total_marks?: number;
+          start_time?: string | null;
+          end_time?: string | null;
+          term?: string;
+          academic_year?: string;
+          instructions?: string;
+          is_published?: boolean;
+          updated_at?: string;
+        };
+      };
+      cbt_questions: {
+        Row: {
+          id: string;
+          exam_id: string;
+          question_text: string;
+          option_a: string;
+          option_b: string;
+          option_c: string;
+          option_d: string;
+          correct_option: string;
+          marks: number;
+          order_index: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          exam_id: string;
+          question_text: string;
+          option_a?: string;
+          option_b?: string;
+          option_c?: string;
+          option_d?: string;
+          correct_option: string;
+          marks?: number;
+          order_index?: number;
+          created_at?: string;
+        };
+        Update: {
+          question_text?: string;
+          option_a?: string;
+          option_b?: string;
+          option_c?: string;
+          option_d?: string;
+          correct_option?: string;
+          marks?: number;
+          order_index?: number;
+        };
+      };
+      cbt_sessions: {
+        Row: {
+          id: string;
+          exam_id: string;
+          student_id: string;
+          started_at: string | null;
+          submitted_at: string | null;
+          total_score: number;
+          is_submitted: boolean;
+          created_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          exam_id: string;
+          student_id: string;
+          started_at?: string;
+          submitted_at?: string | null;
+          total_score?: number;
+          is_submitted?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          submitted_at?: string | null;
+          total_score?: number;
+          is_submitted?: boolean;
+        };
+      };
+      cbt_answers: {
+        Row: {
+          id: string;
+          session_id: string;
+          question_id: string;
+          selected_option: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          session_id: string;
+          question_id: string;
+          selected_option?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          selected_option?: string | null;
+          updated_at?: string;
+        };
+      };
       school_settings: {
         Row: {
           id: string;
@@ -533,6 +736,134 @@ export type Database = {
           key?: string;
           value?: unknown;
           updated_at?: string;
+        };
+      };
+      subjects: {
+        Row: {
+          id: string;
+          name: string;
+          code: string | null;
+          class_id: string | null;
+          teacher_id: string | null;
+          term: string;
+          academic_year: string;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          code?: string | null;
+          class_id?: string | null;
+          teacher_id?: string | null;
+          term?: string;
+          academic_year?: string;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          code?: string | null;
+          class_id?: string | null;
+          teacher_id?: string | null;
+          term?: string;
+          academic_year?: string;
+          is_active?: boolean;
+        };
+      };
+      result_sheets: {
+        Row: {
+          id: string;
+          student_id: string;
+          term: string;
+          academic_year: string;
+          teacher_comment: string;
+          principal_comment: string;
+          next_term_begins: string | null;
+          next_term_fees: string;
+          days_present: number;
+          days_absent: number;
+          total_school_days: number;
+          is_published: boolean;
+          attentiveness: number | null;
+          cooperation: number | null;
+          honesty: number | null;
+          neatness: number | null;
+          politeness: number | null;
+          punctuality: number | null;
+          created_by: string | null;
+          created_at: string | null;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          student_id: string;
+          term: string;
+          academic_year: string;
+          teacher_comment?: string;
+          principal_comment?: string;
+          next_term_begins?: string | null;
+          next_term_fees?: string;
+          days_present?: number;
+          days_absent?: number;
+          total_school_days?: number;
+          is_published?: boolean;
+          attentiveness?: number | null;
+          cooperation?: number | null;
+          honesty?: number | null;
+          neatness?: number | null;
+          politeness?: number | null;
+          punctuality?: number | null;
+          created_by?: string | null;
+          created_at?: string | null;
+          updated_at?: string | null;
+        };
+        Update: {
+          teacher_comment?: string;
+          principal_comment?: string;
+          next_term_begins?: string | null;
+          next_term_fees?: string;
+          days_present?: number;
+          days_absent?: number;
+          total_school_days?: number;
+          is_published?: boolean;
+          attentiveness?: number | null;
+          cooperation?: number | null;
+          honesty?: number | null;
+          neatness?: number | null;
+          politeness?: number | null;
+          punctuality?: number | null;
+          updated_at?: string | null;
+        };
+      };
+      fee_templates: {
+        Row: {
+          id: string;
+          name: string;
+          fee_type: string;
+          amount: number;
+          term: string;
+          academic_year: string;
+          applies_to_class: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          fee_type: string;
+          amount: number;
+          term: string;
+          academic_year?: string;
+          applies_to_class?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          fee_type?: string;
+          amount?: number;
+          term?: string;
+          academic_year?: string;
+          applies_to_class?: string | null;
         };
       };
       transport: {
@@ -611,8 +942,35 @@ export type ParentRow = Database['public']['Tables']['parents']['Row'];
 export type ParentInsert = Database['public']['Tables']['parents']['Insert'];
 export type StudentParentRow = Database['public']['Tables']['student_parents']['Row'];
 export type HealthRecordRow = Database['public']['Tables']['health_records']['Row'];
+export type HealthRecordInsert = Database['public']['Tables']['health_records']['Insert'];
+export type HealthRecordUpdate = Database['public']['Tables']['health_records']['Update'];
 export type TransportRow = Database['public']['Tables']['transport']['Row'];
+export type TransportInsert = Database['public']['Tables']['transport']['Insert'];
+export type TransportUpdate = Database['public']['Tables']['transport']['Update'];
+export type ResultSheetRow = Database['public']['Tables']['result_sheets']['Row'];
+export type ResultSheetInsert = Database['public']['Tables']['result_sheets']['Insert'];
+export type ResultSheetUpdate = Database['public']['Tables']['result_sheets']['Update'];
+export type SubjectRow = Database['public']['Tables']['subjects']['Row'];
+export type SubjectInsert = Database['public']['Tables']['subjects']['Insert'];
+export type SubjectUpdate = Database['public']['Tables']['subjects']['Update'];
+export type FeeTemplateRow = Database['public']['Tables']['fee_templates']['Row'];
+export type FeeTemplateInsert = Database['public']['Tables']['fee_templates']['Insert'];
+export type FeeTemplateUpdate = Database['public']['Tables']['fee_templates']['Update'];
 export type SchoolSettingsRow = Database['public']['Tables']['school_settings']['Row'];
+export type MessageRow = Database['public']['Tables']['messages']['Row'];
+export type MessageInsert = Database['public']['Tables']['messages']['Insert'];
+export type TimetableRow = Database['public']['Tables']['timetable']['Row'];
+export type TimetableInsert = Database['public']['Tables']['timetable']['Insert'];
+export type CbtExamRow = Database['public']['Tables']['cbt_exams']['Row'];
+export type CbtExamInsert = Database['public']['Tables']['cbt_exams']['Insert'];
+export type CbtExamUpdate = Database['public']['Tables']['cbt_exams']['Update'];
+export type CbtQuestionRow = Database['public']['Tables']['cbt_questions']['Row'];
+export type CbtQuestionInsert = Database['public']['Tables']['cbt_questions']['Insert'];
+export type CbtQuestionUpdate = Database['public']['Tables']['cbt_questions']['Update'];
+export type CbtSessionRow = Database['public']['Tables']['cbt_sessions']['Row'];
+export type CbtSessionInsert = Database['public']['Tables']['cbt_sessions']['Insert'];
+export type CbtAnswerRow = Database['public']['Tables']['cbt_answers']['Row'];
+export type CbtAnswerInsert = Database['public']['Tables']['cbt_answers']['Insert'];
 
 // Common relation shapes (for selects with embedded relations)
 export interface ProfileBasic {

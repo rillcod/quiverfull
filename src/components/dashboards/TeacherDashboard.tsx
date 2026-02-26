@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, BookOpen, ClipboardCheck, BarChart3,
-  Monitor, Bell, Calendar
+  Monitor, Bell, Calendar, MonitorCheck, Clock, MessageSquare, User
 } from 'lucide-react';
 import DashboardShell, { NavItem } from './DashboardShell';
 import type { ProfileRow } from '../../lib/supabase';
@@ -12,6 +12,10 @@ import GradesSection from './teacher/GradesSection';
 import LMSSection from './teacher/LMSSection';
 import AnnouncementsSection from './teacher/AnnouncementsSection';
 import CalendarSection from './teacher/CalendarSection';
+import TeacherCBTSection from './teacher/CBTSection';
+import TeacherTimetableSection from './teacher/TimetableSection';
+import MessagesSection from './shared/MessagesSection';
+import ProfileEditSection from './shared/ProfileEditSection';
 
 const teacherNav: NavItem[] = [
   { id: 'overview',      label: 'Overview',       icon: LayoutDashboard, color: 'text-blue-400' },
@@ -21,6 +25,10 @@ const teacherNav: NavItem[] = [
   { id: 'lms',           label: 'LMS',            icon: Monitor,        color: 'text-pink-400' },
   { id: 'announcements', label: 'Announcements',  icon: Bell,            color: 'text-orange-400' },
   { id: 'calendar',      label: 'Calendar',       icon: Calendar,        color: 'text-teal-400' },
+  { id: 'cbt',           label: 'CBT Exams',      icon: MonitorCheck,    color: 'text-violet-400' },
+  { id: 'timetable',    label: 'My Schedule',    icon: Clock,           color: 'text-cyan-400' },
+  { id: 'messages',     label: 'Messages',       icon: MessageSquare,   color: 'text-sky-400' },
+  { id: 'profile',      label: 'My Profile',     icon: User,            color: 'text-gray-400' },
 ];
 
 export default function TeacherDashboard({ profile }: { profile: ProfileRow }) {
@@ -44,6 +52,10 @@ export default function TeacherDashboard({ profile }: { profile: ProfileRow }) {
       case 'lms':           return <LMSSection {...props} />;
       case 'announcements': return <AnnouncementsSection {...props} />;
       case 'calendar':      return <CalendarSection {...props} />;
+      case 'cbt':           return <TeacherCBTSection {...props} />;
+      case 'timetable':     return <TeacherTimetableSection {...props} />;
+      case 'messages':      return <MessagesSection profile={profile} role="teacher" />;
+      case 'profile':       return <ProfileEditSection {...props} />;
       default:              return <OverviewSection {...props} />;
     }
   };

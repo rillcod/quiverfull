@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Bell, Plus, X } from 'lucide-react';
+import { Bell, Plus, X, Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { ProfileRow, AnnouncementRow, AnnouncementInsert, AnnouncementPriority } from '../../../lib/supabase';
 
@@ -14,14 +14,24 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
   );
 }
 
-const PRIORITY_COLORS: Record<AnnouncementPriority, string> = { low: 'bg-gray-100 text-gray-700', normal: 'bg-blue-100 text-blue-700', high: 'bg-orange-100 text-orange-700', urgent: 'bg-red-100 text-red-700' };
+const PRIORITY_COLORS: Record<AnnouncementPriority, string> = {
+  low: 'bg-gray-100 text-gray-700',
+  normal: 'bg-blue-100 text-blue-700',
+  high: 'bg-orange-100 text-orange-700',
+  urgent: 'bg-red-100 text-red-700',
+};
+
+const emptyForm = { title: '', content: '', priority: 'normal' as AnnouncementPriority, expires_at: '' };
 
 export default function AnnouncementsSection({ profile }: Props) {
   const [items, setItems] = useState<AnnouncementRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState<{ title: string; content: string; priority: AnnouncementPriority; expires_at: string }>({ title: '', content: '', priority: 'normal', expires_at: '' });
+  const [editTarget, setEditTarget] = useState<AnnouncementRow | null>(null);
+  const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<AnnouncementRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
   const fetchItems = async () => {
@@ -33,27 +43,67 @@ export default function AnnouncementsSection({ profile }: Props) {
 
   useEffect(() => { fetchItems(); }, []);
 
+  const openAdd = () => {
+    setEditTarget(null);
+    setForm(emptyForm);
+    setShowModal(true);
+  };
+
+  const openEdit = (a: AnnouncementRow) => {
+    setEditTarget(a);
+    setForm({
+      title: a.title,
+      content: a.content,
+      priority: a.priority,
+      expires_at: a.expires_at ? a.expires_at.split('T')[0] : '',
+    });
+    setShowModal(true);
+  };
+
   const save = async () => {
     if (!form.title.trim() || !form.content.trim()) return setToast({ msg: 'Title and content are required', type: 'error' });
     setSaving(true);
     try {
-      await supabase.from('announcements').insert({
-        title: form.title.trim(),
-        content: form.content.trim(),
-        priority: form.priority,
-        published: true,
-        published_by: profile.id,
-        target_audience: ['all'],
-        expires_at: form.expires_at ? form.expires_at + 'T23:59:59.999Z' : null,
-      } as AnnouncementInsert);
-      setToast({ msg: 'Announcement published', type: 'success' });
+      if (editTarget) {
+        await supabase.from('announcements').update({
+          title: form.title.trim(),
+          content: form.content.trim(),
+          priority: form.priority,
+          expires_at: form.expires_at ? form.expires_at + 'T23:59:59.999Z' : null,
+        }).eq('id', editTarget.id);
+        setToast({ msg: 'Announcement updated', type: 'success' });
+      } else {
+        await supabase.from('announcements').insert({
+          title: form.title.trim(),
+          content: form.content.trim(),
+          priority: form.priority,
+          published: true,
+          published_by: profile.id,
+          target_audience: ['all'],
+          expires_at: form.expires_at ? form.expires_at + 'T23:59:59.999Z' : null,
+        } as AnnouncementInsert);
+        setToast({ msg: 'Announcement published', type: 'success' });
+      }
       setShowModal(false);
-      setForm({ title: '', content: '', priority: 'normal', expires_at: '' });
       fetchItems();
     } catch (e: unknown) {
-      setToast({ msg: e instanceof Error ? e.message : 'Failed to publish', type: 'error' });
+      setToast({ msg: e instanceof Error ? e.message : 'Failed to save', type: 'error' });
     }
     setSaving(false);
+  };
+
+  const deleteAnnouncement = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await supabase.from('announcements').delete().eq('id', deleteTarget.id);
+      setToast({ msg: 'Announcement deleted', type: 'success' });
+      setDeleteTarget(null);
+      fetchItems();
+    } catch (e: unknown) {
+      setToast({ msg: e instanceof Error ? e.message : 'Delete failed', type: 'error' });
+    }
+    setDeleting(false);
   };
 
   return (
@@ -61,10 +111,11 @@ export default function AnnouncementsSection({ profile }: Props) {
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-gray-900">Announcements</h2>
-        <button onClick={() => { setForm({ title: '', content: '', priority: 'normal', expires_at: '' }); setShowModal(true); }} className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700">
+        <button onClick={openAdd} className="flex items-center gap-1.5 px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700">
           <Plus className="w-4 h-4" /> New Announcement
         </button>
       </div>
+
       <div className="space-y-4">
         {loading ? (
           <div className="flex justify-center items-center py-16"><div className="w-8 h-8 border-4 border-orange-300 border-t-orange-600 rounded-full animate-spin" /></div>
@@ -74,21 +125,31 @@ export default function AnnouncementsSection({ profile }: Props) {
           items.map(a => (
             <div key={a.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
               <div className="flex items-start justify-between gap-3 mb-2">
-                <h3 className="font-semibold text-gray-800">{a.title}</h3>
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize flex-shrink-0 ${PRIORITY_COLORS[a.priority]}`}>{a.priority}</span>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <h3 className="font-semibold text-gray-800 truncate">{a.title}</h3>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize flex-shrink-0 ${PRIORITY_COLORS[a.priority]}`}>{a.priority}</span>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  <button onClick={() => openEdit(a)} className="p-1.5 hover:bg-yellow-50 rounded-lg text-yellow-500" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                  <button onClick={() => setDeleteTarget(a)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                </div>
               </div>
               <p className="text-sm text-gray-600 whitespace-pre-wrap">{a.content}</p>
-              <p className="text-xs text-gray-400 mt-2">{new Date(a.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-xs text-gray-400">{new Date(a.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                {a.expires_at && <p className="text-xs text-gray-400">Expires: {new Date(a.expires_at).toLocaleDateString()}</p>}
+              </div>
             </div>
           ))
         )}
       </div>
 
+      {/* Add / Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-bold text-gray-800 text-lg">New Announcement</h3>
+              <h3 className="font-bold text-gray-800 text-lg">{editTarget ? 'Edit Announcement' : 'New Announcement'}</h3>
               <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="p-5 space-y-3">
@@ -117,7 +178,23 @@ export default function AnnouncementsSection({ profile }: Props) {
             </div>
             <div className="flex gap-3 p-5 border-t border-gray-100">
               <button onClick={() => setShowModal(false)} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button onClick={save} disabled={saving} className="flex-1 py-2.5 bg-orange-600 text-white rounded-xl text-sm font-medium hover:bg-orange-700 disabled:opacity-50">{saving ? 'Publishing...' : 'Publish'}</button>
+              <button onClick={save} disabled={saving} className="flex-1 py-2.5 bg-orange-600 text-white rounded-xl text-sm font-medium hover:bg-orange-700 disabled:opacity-50">
+                {saving ? 'Saving...' : editTarget ? 'Update' : 'Publish'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirm */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Delete Announcement</h3>
+            <p className="text-sm text-gray-600 mb-5">Delete "<span className="font-semibold">{deleteTarget.title}</span>"? This cannot be undone.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-700">Cancel</button>
+              <button onClick={deleteAnnouncement} disabled={deleting} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">{deleting ? 'Deleting...' : 'Delete'}</button>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Heart, DollarSign, Bell, Calendar } from 'lucide-react';
+import { LayoutDashboard, Heart, DollarSign, Bell, Calendar, BarChart3, ClipboardCheck, MessageSquare, User } from 'lucide-react';
 import DashboardShell, { NavItem } from './DashboardShell';
 import type { ProfileRow } from '../../lib/supabase';
 import OverviewSection from './parent/OverviewSection';
@@ -7,12 +7,20 @@ import ChildrenSection from './parent/ChildrenSection';
 import FeesSection from './parent/FeesSection';
 import AnnouncementsSection from './parent/AnnouncementsSection';
 import CalendarSection from './parent/CalendarSection';
+import ParentGradesSection from './parent/GradesSection';
+import ParentAttendanceSection from './parent/AttendanceSection';
+import MessagesSection from './shared/MessagesSection';
+import ProfileEditSection from './shared/ProfileEditSection';
 
 const parentNav: NavItem[] = [
   { id: 'overview',      label: 'Overview',       icon: LayoutDashboard, color: 'text-purple-400' },
   { id: 'children',      label: 'My Children',    icon: Heart,           color: 'text-pink-400' },
   { id: 'fees',          label: 'Fees',           icon: DollarSign,      color: 'text-emerald-400' },
   { id: 'announcements', label: 'Announcements',  icon: Bell,            color: 'text-orange-400' },
+  { id: 'grades',       label: 'Results',          icon: BarChart3,       color: 'text-purple-400' },
+  { id: 'attendance',   label: 'Attendance',       icon: ClipboardCheck,  color: 'text-green-400' },
+  { id: 'messages',     label: 'Messages',         icon: MessageSquare,   color: 'text-sky-400' },
+  { id: 'profile',      label: 'My Profile',      icon: User,            color: 'text-gray-400' },
   { id: 'calendar',      label: 'Calendar',       icon: Calendar,        color: 'text-teal-400' },
 ];
 
@@ -34,6 +42,10 @@ export default function ParentDashboard({ profile }: { profile: ProfileRow }) {
       case 'children':      return <ChildrenSection {...props} />;
       case 'fees':          return <FeesSection {...props} />;
       case 'announcements': return <AnnouncementsSection />;
+      case 'grades':        return <ParentGradesSection {...props} />;
+      case 'attendance':    return <ParentAttendanceSection {...props} />;
+      case 'messages':      return <MessagesSection profile={profile} role="parent" />;
+      case 'profile':       return <ProfileEditSection {...props} />;
       case 'calendar':      return <CalendarSection />;
       default:              return <OverviewSection {...props} />;
     }
