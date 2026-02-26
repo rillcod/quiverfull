@@ -245,6 +245,7 @@ export default function ResultsSection({ profile }: Props) {
         name: `${activeStudent.profiles?.first_name} ${activeStudent.profiles?.last_name}`,
         studentId: activeStudent.student_id,
         className: activeStudent.classes?.name || '—',
+        classLevel: activeStudent.classes?.level,
         gender: activeStudent.gender || '',
         dob: activeStudent.date_of_birth || '',
       },
@@ -436,8 +437,7 @@ export default function ResultsSection({ profile }: Props) {
                 <ResultCard
                   data={cardData}
                   onPrint={() => printResultCard(
-                    `${activeStudent.profiles?.first_name} ${activeStudent.profiles?.last_name}`,
-                    selectedTerm
+                    `${activeStudent.profiles?.first_name} ${activeStudent.profiles?.last_name}`
                   )}
                 />
               )}

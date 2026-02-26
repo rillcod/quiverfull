@@ -196,7 +196,7 @@ export default function StudentResultsSection({ profile }: Props) {
       ) : cardData ? (
         <ResultCard
           data={cardData}
-          onPrint={() => printResultCard(`${profile.first_name} ${profile.last_name}`, selectedTerm)}
+          onPrint={() => printResultCard(`${profile.first_name} ${profile.last_name}`)}
         />
       ) : null}
     </div>
