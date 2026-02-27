@@ -185,9 +185,7 @@ export default function MessagesSection({ profile, role }: Props) {
     return dt.toLocaleDateString([], { month: 'short', day: 'numeric' });
   };
 
-  const accentColor = role === 'admin' ? 'indigo' : role === 'teacher' ? 'blue' : 'purple';
-  const ring = `focus:ring-${accentColor}-500`;
-  const bgBtn = `bg-${accentColor}-600 hover:bg-${accentColor}-700`;
+  const replyBtnClass = role === 'admin' ? 'bg-indigo-600 hover:bg-indigo-700' : role === 'teacher' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-purple-600 hover:bg-purple-700';
 
   // Message detail view
   if (selected) {
@@ -208,7 +206,7 @@ export default function MessagesSection({ profile, role }: Props) {
             <p className="text-xs text-gray-500">{isOutgoing ? 'To' : 'From'}: {otherName}</p>
           </div>
           {!isOutgoing && (
-            <button onClick={() => setTab('compose')} className={`flex items-center gap-1.5 px-3 py-2 bg-${accentColor}-600 text-white rounded-lg text-sm font-medium hover:bg-${accentColor}-700`}
+            <button onClick={() => setTab('compose')} className={`flex items-center gap-1.5 px-3 py-2 ${replyBtnClass} text-white rounded-lg text-sm font-medium`}
               onClickCapture={() => { loadRecipients(); setCompForm({ recipient_id: selected.sender_id, target_role: '', subject: `Re: ${selected.subject}`, body: '' }); }}>
               <Reply className="w-4 h-4" /> Reply
             </button>

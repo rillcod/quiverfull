@@ -28,7 +28,7 @@ export default function FeesSection({ profile }: Props) {
   }, [profile.id]);
 
   const statusColor: Record<string, string> = { paid: 'bg-green-100 text-green-700', partial: 'bg-blue-100 text-blue-700', pending: 'bg-yellow-100 text-yellow-700', overdue: 'bg-red-100 text-red-700' };
-  const total = fees.reduce((s, f) => s + (f.amount - f.paid_amount), 0);
+  const total = fees.reduce((s, f) => s + (f.amount - (f.paid_amount ?? 0)), 0);
 
   if (loading) return <div className="flex justify-center items-center h-40"><div className="w-8 h-8 border-4 border-emerald-300 border-t-emerald-600 rounded-full animate-spin" /></div>;
 
@@ -53,8 +53,8 @@ export default function FeesSection({ profile }: Props) {
                   <td className="py-3 px-4 font-medium text-gray-800">{f.students?.profiles?.first_name} {f.students?.profiles?.last_name}</td>
                   <td className="py-3 px-4 text-gray-600">{f.fee_type}</td>
                   <td className="py-3 px-4 font-medium">₦{Number(f.amount).toLocaleString()}</td>
-                  <td className="py-3 px-4 text-green-600">₦{Number(f.paid_amount).toLocaleString()}</td>
-                  <td className="py-3 px-4 font-medium text-red-600">₦{(f.amount - f.paid_amount).toLocaleString()}</td>
+                  <td className="py-3 px-4 text-green-600">₦{Number(f.paid_amount ?? 0).toLocaleString()}</td>
+                  <td className="py-3 px-4 font-medium text-red-600">₦{(f.amount - (f.paid_amount ?? 0)).toLocaleString()}</td>
                   <td className="py-3 px-4 text-gray-500">{new Date(f.due_date).toLocaleDateString()}</td>
                   <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${statusColor[f.status]}`}>{f.status}</span></td>
                 </tr>
