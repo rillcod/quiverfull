@@ -10,7 +10,6 @@ import TeacherDashboard from './components/dashboards/TeacherDashboard';
 import AdminDashboard from './components/dashboards/AdminDashboard';
 import StudentDashboard from './components/dashboards/StudentDashboard';
 import KidsLanding from './components/kids/KidsLanding';
-import KidsButton from './components/kids/KidsButton';
 import { LogOut } from 'lucide-react';
 
 function App() {
@@ -95,22 +94,18 @@ function App() {
 
   // Render appropriate dashboard based on role
   const renderDashboard = () => {
-    // Add Kids Zone button to all dashboards
+    // Wrap dashboard with a floating "Main Website" shortcut
     const addKidsButton = (dashboard: React.ReactElement) => {
       return (
         <div className="relative">
           {dashboard}
-          {/* Floating Kids Zone Button */}
           <div className="fixed bottom-6 right-6 z-50">
-            <div className="flex flex-col gap-3 items-end">
-              <button
-                onClick={() => setShowMainWebsite(true)}
-                className="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-full shadow-lg font-medium text-sm transition-all duration-200 transform hover:scale-105"
-              >
-                🏠 Main Website
-              </button>
-              <KidsButton onClick={() => setShowKidsZone(true)} />
-            </div>
+            <button
+              onClick={() => setShowMainWebsite(true)}
+              className="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-full shadow-lg font-medium text-sm transition-all duration-200 transform hover:scale-105"
+            >
+              🏠 Main Website
+            </button>
           </div>
         </div>
       );
