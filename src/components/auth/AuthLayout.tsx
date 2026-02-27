@@ -1,5 +1,4 @@
 import React from 'react';
-import { BookOpen, Sparkles } from 'lucide-react';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -13,9 +12,12 @@ export default function AuthLayout({ children, title, subtitle }: AuthLayoutProp
       <div className="max-w-md w-full">
         {/* School Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-orange-400 to-orange-500 rounded-full mb-4 shadow-lg transform hover:scale-105 transition-transform duration-300">
-            <BookOpen className="w-10 h-10 text-white" />
-            <Sparkles className="w-4 h-4 text-yellow-200 absolute translate-x-2 -translate-y-2" />
+          <div className="inline-block mb-4">
+            <img
+              src="/logo.jpg"
+              alt="The Quiverfull School"
+              className="w-24 h-24 rounded-full object-cover shadow-lg mx-auto ring-4 ring-orange-200"
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-800 mb-2">The Quiverfull School</h1>
           <p className="text-gray-600 text-sm">Nurturing Young Minds with Excellence</p>
