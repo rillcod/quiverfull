@@ -31,13 +31,21 @@ function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error';
 
 const ASSIGNMENT_TYPES: AssignmentType[] = ['homework', 'quiz', 'exam', 'project', 'classwork'];
 const emptyCourseForm = { subject: '', title: '', description: '', class_id: '', teacher_id: '', term: 'First Term' as string, academic_year: getDefaultAcademicYear() };
-const emptyAssignForm = { course_id: '', title: '', description: '', due_date: '', max_score: '100', type: 'homework' as AssignmentType };
+const emptyAssignForm = { course_id: '', title: '', description: '', due_date: '', max_score: '20', type: 'homework' as AssignmentType };
+const DEFAULT_SUBJECTS = [
+  'Mathematics', 'English Language', 'Basic Science', 'Social Studies',
+  'Cultural & Creative Arts', 'Civic Education', 'Computer Studies',
+  'Christian Religious Studies', 'Physical & Health Education',
+  'Agricultural Science', 'Home Economics', 'Verbal Reasoning',
+  'Quantitative Reasoning', 'French', 'Yoruba', 'Igbo',
+];
 
 export default function LMSSection({ profile }: Props) {
   const [courses, setCourses] = useState<CourseWithClass[]>([]);
   const [assignments, setAssignments] = useState<AssignmentWithCourse[]>([]);
   const [teachers, setTeachers] = useState<TeacherOption[]>([]);
   const [classes, setClasses] = useState<Pick<ClassRow, 'id' | 'name'>[]>([]);
+  const [subjectOptions, setSubjectOptions] = useState<string[]>(DEFAULT_SUBJECTS);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'courses' | 'assignments'>('courses');
   const [search, setSearch] = useState('');
@@ -60,16 +68,20 @@ export default function LMSSection({ profile }: Props) {
 
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: courseData }, { data: assignData }, { data: teacherData }, { data: classData }] = await Promise.all([
-      supabase.from('courses').select('*, classes:class_id(name, level)').eq('is_active', true).order('created_at', { ascending: false }),
+    const [{ data: courseData }, { data: assignData }, { data: teacherData }, { data: classData }, { data: subRows }] = await Promise.all([
+      supabase.from('courses').select('*, classes:class_id(name, level)').eq('is_active', true).order('subject').order('created_at', { ascending: false }),
       supabase.from('assignments').select('*, courses:course_id(title, subject)').order('created_at', { ascending: false }).limit(100),
       supabase.from('teachers').select('id, profile_id, profiles:profile_id(first_name, last_name)').eq('is_active', true),
       supabase.from('classes').select('id, name').order('name'),
+      supabase.from('subjects').select('name').eq('is_active', true).order('name'),
     ]);
     setCourses((courseData || []) as CourseWithClass[]);
     setAssignments((assignData || []) as AssignmentWithCourse[]);
     setTeachers((teacherData || []) as unknown as TeacherOption[]);
     setClasses((classData || []) as Pick<ClassRow, 'id' | 'name'>[]);
+    if (subRows && subRows.length > 0) {
+      setSubjectOptions([...new Set((subRows as { name: string }[]).map(s => s.name))]);
+    }
     setLoading(false);
   };
 
@@ -198,11 +210,11 @@ export default function LMSSection({ profile }: Props) {
     <div className="space-y-5">
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-gray-900">LMS – Courses & Assignments</h2>
+        <h2 className="text-xl font-bold text-gray-900">LMS – Subjects & Assignments</h2>
         <div className="flex gap-2">
           {tab === 'courses' && (
             <button onClick={openAddCourse} className="flex items-center gap-1.5 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium hover:bg-pink-700">
-              <Plus className="w-4 h-4" /> Add Course
+              <Plus className="w-4 h-4" /> Add Topic
             </button>
           )}
           {tab === 'assignments' && (
@@ -214,7 +226,7 @@ export default function LMSSection({ profile }: Props) {
       </div>
       <div className="flex gap-2">
         <button onClick={() => setTab('courses')} className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === 'courses' ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-          <BookOpen className="w-4 h-4 inline mr-1.5 -mt-0.5" /> Courses
+          <BookOpen className="w-4 h-4 inline mr-1.5 -mt-0.5" /> Subjects & Topics
         </button>
         <button onClick={() => setTab('assignments')} className={`px-4 py-2 rounded-lg text-sm font-medium ${tab === 'assignments' ? 'bg-pink-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
           <FileText className="w-4 h-4 inline mr-1.5 -mt-0.5" /> Assignments
@@ -235,7 +247,7 @@ export default function LMSSection({ profile }: Props) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs text-gray-500 uppercase">
-                    <th className="py-3 px-4">Course / Subject</th><th className="py-3 px-4">Class</th>
+                    <th className="py-3 px-4">Subject / Topic</th><th className="py-3 px-4">Class</th>
                     <th className="py-3 px-4">Term</th><th className="py-3 px-4">Year</th><th className="py-3 px-4">Actions</th>
                   </tr>
                 </thead>
@@ -304,24 +316,28 @@ export default function LMSSection({ profile }: Props) {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-bold text-gray-800 text-lg">{editCourse ? 'Edit Course' : 'Add Course'}</h3>
+              <h3 className="font-bold text-gray-800 text-lg">{editCourse ? 'Edit Topic' : 'Add Topic'}</h3>
               <button onClick={() => setShowCourseModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="p-5 space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Subject *</label>
-                <input value={courseForm.subject} onChange={e => setCourseForm(f => ({ ...f, subject: e.target.value }))} placeholder="e.g. Mathematics"
+                <select value={courseForm.subject} onChange={e => setCourseForm(f => ({ ...f, subject: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+                  <option value="">Select subject…</option>
+                  {subjectOptions.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Topic / Lesson Title *</label>
+                <input value={courseForm.title} onChange={e => setCourseForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Chapter 3: Basic Algebra"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Course Title *</label>
-                <input value={courseForm.title} onChange={e => setCourseForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Basic Algebra"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                <textarea value={courseForm.description} onChange={e => setCourseForm(f => ({ ...f, description: e.target.value }))} rows={2}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none" />
+                <label className="block text-xs font-medium text-gray-600 mb-1">Lesson Notes / Materials</label>
+                <textarea value={courseForm.description} onChange={e => setCourseForm(f => ({ ...f, description: e.target.value }))} rows={4}
+                  placeholder="Type lesson notes, key points or resource URLs…"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-y" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Class</label>
@@ -358,7 +374,7 @@ export default function LMSSection({ profile }: Props) {
             </div>
             <div className="flex gap-3 p-5 border-t border-gray-100">
               <button onClick={() => setShowCourseModal(false)} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button onClick={saveCourse} disabled={saving} className="flex-1 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700 disabled:opacity-50">{saving ? 'Saving...' : editCourse ? 'Update' : 'Create Course'}</button>
+              <button onClick={saveCourse} disabled={saving} className="flex-1 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700 disabled:opacity-50">{saving ? 'Saving...' : editCourse ? 'Update Topic' : 'Create Topic'}</button>
             </div>
           </div>
         </div>
@@ -374,11 +390,11 @@ export default function LMSSection({ profile }: Props) {
             </div>
             <div className="p-5 space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Course *</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Subject / Topic *</label>
                 <select value={assignForm.course_id} onChange={e => setAssignForm(f => ({ ...f, course_id: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
                   disabled={!!editAssignment}>
-                  <option value="">Select course...</option>
+                  <option value="">Select topic…</option>
                   {courses.map(c => <option key={c.id} value={c.id}>{c.subject} – {c.title}</option>)}
                 </select>
               </div>
@@ -424,8 +440,8 @@ export default function LMSSection({ profile }: Props) {
       {deleteCourse && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
-            <h3 className="font-bold text-gray-800 text-lg mb-2">Remove Course</h3>
-            <p className="text-sm text-gray-600 mb-5">Remove course "<span className="font-semibold">{deleteCourse.title}</span>"?</p>
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Remove Topic</h3>
+            <p className="text-sm text-gray-600 mb-5">Remove topic "<span className="font-semibold">{deleteCourse.title}</span>"?</p>
             <div className="flex gap-3">
               <button onClick={() => setDeleteCourse(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-700">Cancel</button>
               <button onClick={confirmDeleteCourse} disabled={deletingCourse} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">{deletingCourse ? 'Removing...' : 'Remove'}</button>

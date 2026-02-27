@@ -14,3 +14,15 @@ export function getDefaultAcademicYear(): string {
   if (month >= 8) return `${year}/${year + 1}`;
   return `${year - 1}/${year}`;
 }
+
+/** Returns a list of academic year options spanning ±2 years from current. */
+export function getAcademicYearOptions(): string[] {
+  const current = getDefaultAcademicYear();
+  const [startStr] = current.split('/');
+  const start = parseInt(startStr, 10);
+  const options: string[] = [];
+  for (let y = start - 2; y <= start + 2; y++) {
+    options.push(`${y}/${y + 1}`);
+  }
+  return options;
+}

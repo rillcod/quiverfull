@@ -39,7 +39,6 @@ interface ResultSheetMeta {
   is_published: boolean;
 }
 
-const BEHAVIOR_TRAITS = ['punctuality', 'neatness', 'honesty', 'cooperation', 'attentiveness', 'politeness'] as const;
 const defaultMeta: ResultSheetMeta = {
   teacher_comment: '', principal_comment: '',
   punctuality: 3, neatness: 3, honesty: 3, cooperation: 3, attentiveness: 3, politeness: 3,
@@ -455,7 +454,7 @@ export default function TeacherResultsSection({ profile }: Props) {
                         <div className="text-center py-12 text-gray-400">
                           <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
                           <p className="font-medium">No result data yet</p>
-                          <p className="text-xs mt-1">Switch to "Edit Sheet" to fill in behavior, attendance and comments.</p>
+                          <p className="text-xs mt-1">Switch to "Edit Sheet" to fill in attendance and comments.</p>
                           <button onClick={() => setModalTab('edit')} className="mt-4 px-4 py-2 bg-blue-700 text-white rounded-lg text-sm font-medium hover:bg-blue-800">
                             Open Edit Sheet
                           </button>
@@ -477,27 +476,6 @@ export default function TeacherResultsSection({ profile }: Props) {
                   {/* ── Edit Tab ── */}
                   {modalTab === 'edit' && (
                     <div className="space-y-6">
-
-                      {/* Behavior ratings */}
-                      <div>
-                        <h4 className="font-semibold text-gray-800 text-sm mb-3">Affective / Psychomotor Domain</h4>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                          {BEHAVIOR_TRAITS.map(trait => (
-                            <div key={trait}>
-                              <label className="block text-xs font-medium text-gray-600 mb-1 capitalize">{trait}</label>
-                              <select value={metaForm[trait]}
-                                onChange={e => updateMeta({ [trait]: Number(e.target.value) })}
-                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value={5}>A — Excellent</option>
-                                <option value={4}>B — Very Good</option>
-                                <option value={3}>C — Good</option>
-                                <option value={2}>D — Fair</option>
-                                <option value={1}>E — Poor</option>
-                              </select>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
 
                       {/* Attendance */}
                       <div>

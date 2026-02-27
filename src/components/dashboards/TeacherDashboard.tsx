@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   LayoutDashboard, BookOpen, ClipboardCheck, BarChart3,
-  Monitor, Bell, Calendar, MonitorCheck, Clock, MessageSquare, User, FileText
+  Monitor, Bell, Calendar, MonitorCheck, Clock, MessageSquare, User, FileText, Users
 } from 'lucide-react';
 import DashboardShell, { NavItem } from './DashboardShell';
 import type { ProfileRow } from '../../lib/supabase';
@@ -17,10 +17,12 @@ import TeacherTimetableSection from './teacher/TimetableSection';
 import MessagesSection from './shared/MessagesSection';
 import ProfileEditSection from './shared/ProfileEditSection';
 import TeacherResultsSection from './teacher/ResultsSection';
+import TeacherStudentsSection from './teacher/StudentsSection';
 
 const teacherNav: NavItem[] = [
   { id: 'overview',      label: 'Overview',       icon: LayoutDashboard, color: 'text-blue-400' },
   { id: 'classes',       label: 'My Classes',     icon: BookOpen,        color: 'text-green-400' },
+  { id: 'students',      label: 'My Students',    icon: Users,           color: 'text-indigo-400' },
   { id: 'attendance',    label: 'Attendance',     icon: ClipboardCheck,  color: 'text-cyan-400' },
   { id: 'grades',        label: 'Grades',         icon: BarChart3,       color: 'text-purple-400' },
   { id: 'results',       label: 'Result Cards',   icon: FileText,        color: 'text-green-400' },
@@ -49,6 +51,7 @@ export default function TeacherDashboard({ profile }: { profile: ProfileRow }) {
     switch (section) {
       case 'overview':      return <OverviewSection {...props} />;
       case 'classes':       return <ClassesSection {...props} />;
+      case 'students':      return <TeacherStudentsSection {...props} />;
       case 'attendance':    return <AttendanceSection {...props} />;
       case 'grades':        return <GradesSection {...props} />;
       case 'results':       return <TeacherResultsSection {...props} />;

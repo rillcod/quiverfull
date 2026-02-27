@@ -1,19 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   FileText, Search, ChevronDown, Save, X, Eye, CheckCircle, Clock,
-  Trash2, AlertTriangle, BarChart3, GraduationCap,
+  Trash2, AlertTriangle, BarChart3, GraduationCap, Printer,
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { TERMS, getDefaultAcademicYear } from '../../../lib/academicConfig';
 import { useSchoolSettings } from '../../../hooks/useSchoolSettings';
-import ResultCard, { getNigerianGrade, printResultCard } from './ResultCard';
+import ResultCard, { getNigerianGrade, printResultCard, CardPrintContent } from './ResultCard';
 import type { ResultCardData, SubjectResult } from './ResultCard';
 import type { ProfileRow, ClassRow, GradeRow } from '../../../lib/supabase';
 import PerformanceChart from '../shared/PerformanceChart';
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
 
-const BEHAVIOR_TRAITS = ['punctuality', 'neatness', 'honesty', 'cooperation', 'attentiveness', 'politeness'] as const;
 
 const defaultMeta = {
   teacher_comment: '', principal_comment: '',
@@ -41,14 +40,30 @@ interface OverallClassStat {
   published: number;
 }
 
+function getTermDateRange(term: string, academicYear: string): { start: string; end: string } {
+  const [startYearStr] = academicYear.split('/');
+  const y = parseInt(startYearStr, 10);
+  if (term === 'First Term')  return { start: `${y}-09-01`,   end: `${y}-12-31` };
+  if (term === 'Second Term') return { start: `${y + 1}-01-01`, end: `${y + 1}-04-30` };
+  if (term === 'Third Term')  return { start: `${y + 1}-05-01`, end: `${y + 1}-07-31` };
+  return { start: `${y}-09-01`, end: `${y + 1}-07-31` };
+}
+
 function computeSubjects(grades: GradeRow[]): SubjectResult[] {
-  const map = new Map<string, { ca1: { score: number; max: number } | null; ca2: { score: number; max: number } | null; exam: { score: number; max: number } | null }>();
+  const map = new Map<string, {
+    ca1:  { score: number; max: number } | null;
+    ca2:  { score: number; max: number } | null;
+    exam: { score: number; max: number } | null;
+    hw:   { score: number; max: number } | null;
+  }>();
   for (const g of grades) {
     const key = g.subject.trim();
-    if (!map.has(key)) map.set(key, { ca1: null, ca2: null, exam: null });
+    if (!map.has(key)) map.set(key, { ca1: null, ca2: null, exam: null, hw: null });
     const entry = map.get(key)!;
-    const type = g.assessment_type.toLowerCase();
-    if (type === '1st ca' || type === 'first ca' || type === '1st continuous assessment') {
+    const type = g.assessment_type.toLowerCase().trim();
+    if (type === 'home work' || type === 'homework') {
+      entry.hw = { score: g.score, max: g.max_score };
+    } else if (type === '1st ca' || type === 'first ca' || type === '1st continuous assessment') {
       entry.ca1 = { score: g.score, max: g.max_score };
     } else if (type === '2nd ca' || type === 'second ca' || type === '2nd continuous assessment') {
       entry.ca2 = { score: g.score, max: g.max_score };
@@ -61,11 +76,12 @@ function computeSubjects(grades: GradeRow[]): SubjectResult[] {
     }
   }
   return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([subject, s]) => {
-    const ca1 = s.ca1 ? Math.round((s.ca1.score / s.ca1.max) * 20) : 0;
-    const ca2 = s.ca2 ? Math.round((s.ca2.score / s.ca2.max) * 20) : 0;
+    const ca1  = s.ca1  ? Math.round((s.ca1.score  / s.ca1.max)  * 20) : 0;
+    const ca2  = s.ca2  ? Math.round((s.ca2.score  / s.ca2.max)  * 20) : 0;
     const exam = s.exam ? Math.round((s.exam.score / s.exam.max) * 60) : 0;
+    const hw   = s.hw   ? Math.round((s.hw.score   / s.hw.max)   * 20) : undefined;
     const total = ca1 + ca2 + exam;
-    return { subject, ca1, ca2, exam, total, ...getNigerianGrade(total) };
+    return { subject, ca1, ca2, exam, homework: hw, total, ...getNigerianGrade(total) };
   });
 }
 
@@ -113,6 +129,12 @@ export default function ResultsSection({ profile }: Props) {
   const [loadingOverall, setLoadingOverall] = useState(false);
 
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+  // Selective printing
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkCards, setBulkCards] = useState<ResultCardData[]>([]);
+  const [isBulkLoading, setIsBulkLoading] = useState(false);
+  const bulkRef = useRef<HTMLDivElement>(null);
 
   // Load classes
   useEffect(() => {
@@ -227,9 +249,11 @@ export default function ResultsSection({ profile }: Props) {
     setModalTab('preview');
     setDeleteConfirm(false);
 
-    const [{ data: myGrades }, { data: classGrades }] = await Promise.all([
+    const dateRange = getTermDateRange(selectedTerm, academicYear);
+    const [{ data: myGrades }, { data: classGrades }, { data: attData }] = await Promise.all([
       supabase.from('grades').select('*').eq('student_id', student.id).eq('term', selectedTerm).eq('academic_year', academicYear),
       supabase.from('grades').select('*').in('student_id', students.map(s => s.id)).eq('term', selectedTerm).eq('academic_year', academicYear),
+      supabase.from('attendance').select('status').eq('student_id', student.id).gte('date', dateRange.start).lte('date', dateRange.end),
     ]);
 
     const mySubjects = computeSubjects((myGrades || []) as GradeRow[]);
@@ -255,8 +279,24 @@ export default function ResultsSection({ profile }: Props) {
       classAverage: allTotals.length > 0 ? Math.round(allTotals.reduce((a, b) => a + b, 0) / allTotals.length) : 0,
     });
 
+    // Auto-calculate attendance from records
+    const attRecords = (attData || []) as { status: string }[];
+    const attTotal = attRecords.length;
+    const attPresent = attRecords.filter(a => a.status === 'present' || a.status === 'late').length;
+    const autoAtt = attTotal > 0
+      ? { days_present: attPresent, days_absent: attTotal - attPresent, total_school_days: attTotal }
+      : {};
+
     const existing = resultSheets[student.id];
-    setMetaForm(existing ? { ...defaultMeta, ...existing } : { ...defaultMeta });
+    if (existing) {
+      // Use saved attendance if already set, else auto-fill
+      setMetaForm({
+        ...defaultMeta, ...existing,
+        ...(existing.total_school_days === 0 ? autoAtt : {}),
+      });
+    } else {
+      setMetaForm({ ...defaultMeta, ...autoAtt });
+    }
   };
 
   const closeModal = () => { setActiveStudent(null); setActiveSubjects([]); setActiveClassStats(null); setDeleteConfirm(false); };
@@ -328,6 +368,116 @@ export default function ResultsSection({ profile }: Props) {
       setToast({ msg: e instanceof Error ? e.message : 'Delete failed', type: 'error' });
     }
   };
+
+  // Clear selection when class / term / year changes
+  useEffect(() => { setSelectedIds(new Set()); }, [selectedClass, selectedTerm, academicYear]);
+
+  // Trigger print window once bulk cards have rendered into the hidden container
+  useEffect(() => {
+    if (bulkCards.length === 0) return;
+    const t = setTimeout(() => {
+      const el = bulkRef.current;
+      if (!el) { setBulkCards([]); return; }
+      const win = window.open('', '_blank', 'width=1000,height=800');
+      if (!win) { setBulkCards([]); setToast({ msg: 'Pop-up blocked — allow pop-ups and try again', type: 'error' }); return; }
+      win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"/>
+<title>Result Sheets — ${selectedTerm} ${academicYear}</title>
+<style>
+  @page { size: A4 portrait; margin: 8mm 10mm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #000; background: #fff; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { border: 1px solid #ccc; padding: 3px 5px; }
+  img { max-width: 100%; }
+  .card-page { page-break-after: always; margin-bottom: 0; }
+  .card-page:last-child { page-break-after: auto; }
+</style></head><body>${el.innerHTML}</body></html>`);
+      win.document.close();
+      setTimeout(() => { win.print(); setBulkCards([]); }, 700);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [bulkCards, selectedTerm, academicYear]);
+
+  const printSelected = useCallback(async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setIsBulkLoading(true);
+    try {
+      const selected = students.filter(s => ids.includes(s.id));
+      const dateRange = getTermDateRange(selectedTerm, academicYear);
+
+      const [classGradesResult, attResultsAll] = await Promise.all([
+        supabase.from('grades').select('*')
+          .in('student_id', students.map(s => s.id))
+          .eq('term', selectedTerm).eq('academic_year', academicYear),
+        Promise.all(selected.map(s =>
+          supabase.from('attendance').select('status')
+            .eq('student_id', s.id).gte('date', dateRange.start).lte('date', dateRange.end)
+        )),
+      ]);
+
+      const allGrades = (classGradesResult.data || []) as GradeRow[];
+
+      // Class-wide stats (shared)
+      const grandTotalByStudent: Record<string, number> = {};
+      students.forEach(s => {
+        const sg = allGrades.filter(g => g.student_id === s.id);
+        grandTotalByStudent[s.id] = computeSubjects(sg).reduce((acc, sub) => acc + sub.total, 0);
+      });
+      const allTotals = Object.values(grandTotalByStudent).filter(t => t > 0);
+      const sorted = [...allTotals].sort((a, b) => b - a);
+      const classAvg = allTotals.length > 0 ? Math.round(allTotals.reduce((a, b) => a + b, 0) / allTotals.length) : 0;
+
+      const cards: ResultCardData[] = selected.map((student, idx) => {
+        const myGrades = allGrades.filter(g => g.student_id === student.id);
+        const mySubjects = computeSubjects(myGrades);
+        const myGrandTotal = mySubjects.reduce((acc, s) => acc + s.total, 0);
+        const position = sorted.indexOf(myGrandTotal) + 1 || sorted.length + 1;
+
+        const attRecords = (attResultsAll[idx].data || []) as { status: string }[];
+        const attTotal = attRecords.length;
+        const attPresent = attRecords.filter(a => a.status === 'present' || a.status === 'late').length;
+
+        const meta = resultSheets[student.id] || defaultMeta;
+        const att = attTotal > 0
+          ? { daysPresent: attPresent, daysAbsent: attTotal - attPresent, totalDays: attTotal }
+          : { daysPresent: meta.days_present, daysAbsent: meta.days_absent, totalDays: meta.total_school_days };
+
+        return {
+          student: {
+            name: `${student.profiles?.first_name} ${student.profiles?.last_name}`,
+            studentId: student.student_id,
+            className: student.classes?.name || '—',
+            classLevel: student.classes?.level,
+            gender: student.gender || '',
+            dob: student.date_of_birth || '',
+          },
+          term: selectedTerm, academicYear,
+          subjects: mySubjects,
+          classStats: { position, totalStudents: students.length, grandTotal: myGrandTotal, highestInClass: sorted[0] ?? 0, lowestInClass: sorted[sorted.length - 1] ?? 0, classAverage: classAvg },
+          behavior: { punctuality: meta.punctuality, neatness: meta.neatness, honesty: meta.honesty, cooperation: meta.cooperation, attentiveness: meta.attentiveness, politeness: meta.politeness },
+          attendance: att,
+          comments: { teacher: meta.teacher_comment, principal: meta.principal_comment },
+          nextTerm: { begins: meta.next_term_begins, fees: meta.next_term_fees },
+          schoolName, schoolAddress: (settings.school_address as string) || '',
+        };
+      });
+
+      setBulkCards(cards);
+    } catch {
+      setToast({ msg: 'Failed to load results for printing', type: 'error' });
+    }
+    setIsBulkLoading(false);
+  }, [selectedIds, students, selectedTerm, academicYear, resultSheets, schoolName, settings]);
+
+  const toggleSelect = (id: string) => setSelectedIds(prev => {
+    const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n;
+  });
+  const toggleSelectAll = () => setSelectedIds(
+    selectedIds.size === filteredStudents.length && filteredStudents.length > 0
+      ? new Set()
+      : new Set(filteredStudents.map(s => s.id))
+  );
 
   const filteredStudents = students.filter(s => {
     const name = `${s.profiles?.first_name} ${s.profiles?.last_name}`.toLowerCase();
@@ -500,8 +650,8 @@ export default function ResultsSection({ profile }: Props) {
             ))}
           </div>
 
-          {/* List / Chart toggle */}
-          <div className="flex items-center gap-3">
+          {/* List / Chart toggle + Print Selected */}
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex rounded-xl overflow-hidden border border-gray-200 text-xs font-medium shadow-sm">
               <button onClick={() => setClassView('list')} className={`px-3 py-1.5 ${classView === 'list' ? 'bg-green-700 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
                 Student List
@@ -515,6 +665,13 @@ export default function ResultsSection({ profile }: Props) {
               <input placeholder="Search students…" value={search} onChange={e => setSearch(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
             </div>
+            {selectedIds.size > 0 && (
+              <button onClick={printSelected} disabled={isBulkLoading}
+                className="flex items-center gap-1.5 px-4 py-2 bg-indigo-700 text-white rounded-lg text-xs font-semibold hover:bg-indigo-800 disabled:opacity-60 shadow-sm">
+                <Printer className="w-3.5 h-3.5" />
+                {isBulkLoading ? 'Loading…' : `Print Selected (${selectedIds.size})`}
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -575,6 +732,12 @@ export default function ResultsSection({ profile }: Props) {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs text-gray-500 uppercase">
+                    <th className="py-3 px-3 w-10">
+                      <input type="checkbox"
+                        checked={filteredStudents.length > 0 && selectedIds.size === filteredStudents.length}
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded accent-indigo-600 cursor-pointer" />
+                    </th>
                     <th className="py-3 px-4">Student</th>
                     <th className="py-3 px-4">Student ID</th>
                     <th className="py-3 px-4">Result Status</th>
@@ -585,8 +748,13 @@ export default function ResultsSection({ profile }: Props) {
                   {filteredStudents.map((s, idx) => {
                     const sheet = resultSheets[s.id];
                     const isPublished = sheet?.is_published;
+                    const isSelected = selectedIds.has(s.id);
                     return (
-                      <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                      <tr key={s.id} className={`border-b border-gray-50 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-indigo-50' : ''}`}>
+                        <td className="py-3 px-3" onClick={e => e.stopPropagation()}>
+                          <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(s.id)}
+                            className="w-4 h-4 rounded accent-indigo-600 cursor-pointer" />
+                        </td>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-2.5">
                             <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs flex-shrink-0">
@@ -619,7 +787,7 @@ export default function ResultsSection({ profile }: Props) {
                     );
                   })}
                   {filteredStudents.length === 0 && (
-                    <tr><td colSpan={4} className="text-center py-10 text-gray-400">No students found</td></tr>
+                    <tr><td colSpan={5} className="text-center py-10 text-gray-400">No students found</td></tr>
                   )}
                 </tbody>
               </table>
@@ -676,26 +844,6 @@ export default function ResultsSection({ profile }: Props) {
               {modalTab === 'edit' && (
                 <div className="space-y-6">
 
-                  {/* Behavior */}
-                  <div>
-                    <h4 className="font-semibold text-gray-800 text-sm mb-3">Affective / Psychomotor Domain</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      {BEHAVIOR_TRAITS.map(trait => (
-                        <div key={trait}>
-                          <label className="block text-xs font-medium text-gray-600 mb-1 capitalize">{trait}</label>
-                          <select value={metaForm[trait]} onChange={e => setMetaForm(f => ({ ...f, [trait]: Number(e.target.value) }))}
-                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <option value={5}>A — Excellent</option>
-                            <option value={4}>B — Very Good</option>
-                            <option value={3}>C — Good</option>
-                            <option value={2}>D — Fair</option>
-                            <option value={1}>E — Poor</option>
-                          </select>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
                   {/* Attendance */}
                   <div>
                     <h4 className="font-semibold text-gray-800 text-sm mb-3">Attendance Record</h4>
@@ -716,21 +864,19 @@ export default function ResultsSection({ profile }: Props) {
                   </div>
 
                   {/* Remarks */}
-                  <div>
-                    <h4 className="font-semibold text-gray-800 text-sm mb-3">Remarks</h4>
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Class Teacher's Remark</label>
-                        <textarea rows={2} value={metaForm.teacher_comment} onChange={e => setMetaForm(f => ({ ...f, teacher_comment: e.target.value }))}
-                          placeholder="e.g. A diligent student who shows great potential…"
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Principal's / Proprietress' Remark</label>
-                        <textarea rows={2} value={metaForm.principal_comment} onChange={e => setMetaForm(f => ({ ...f, principal_comment: e.target.value }))}
-                          placeholder="e.g. Excellent performance. Keep it up!"
-                          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
-                      </div>
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-gray-800 text-sm mb-1">Remarks</h4>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Class Teacher's Remark</label>
+                      <textarea rows={3} value={metaForm.teacher_comment} onChange={e => setMetaForm(f => ({ ...f, teacher_comment: e.target.value }))}
+                        placeholder="e.g. A diligent student who shows great potential…"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Proprietress' Remark</label>
+                      <textarea rows={3} value={metaForm.principal_comment} onChange={e => setMetaForm(f => ({ ...f, principal_comment: e.target.value }))}
+                        placeholder="e.g. Excellent performance. We are proud of your achievements!"
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 resize-none" />
                     </div>
                   </div>
 
@@ -791,6 +937,17 @@ export default function ResultsSection({ profile }: Props) {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Hidden off-screen container for bulk printing ── */}
+      {bulkCards.length > 0 && (
+        <div ref={bulkRef} style={{ position: 'fixed', left: '-99999px', top: 0, width: '210mm', pointerEvents: 'none' }} aria-hidden="true">
+          {bulkCards.map((card, i) => (
+            <div key={i} className="card-page" style={{ pageBreakAfter: i < bulkCards.length - 1 ? 'always' : 'auto' }}>
+              <CardPrintContent data={card} />
+            </div>
+          ))}
         </div>
       )}
     </div>
