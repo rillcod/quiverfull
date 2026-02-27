@@ -25,7 +25,7 @@ interface CourseWithClass extends CourseRow { classes?: { name: string; level: C
 interface AssignmentWithCourse extends AssignmentRow { courses?: { title: string; subject: string } | null; }
 interface SubmissionWithStudent extends SubmissionRow {
   students?: { student_id: string; profiles?: { first_name: string; last_name: string } | null } | null;
-  assignments?: { title: string; max_score: number; course_id: string } | null;
+  assignments?: { title: string; max_score: number; course_id: string; courses?: { subject: string } | null } | null;
 }
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
@@ -108,7 +108,7 @@ export default function LMSSection({ profile }: Props) {
       if (assignIds.length > 0) {
         const { data: subData } = await supabase
           .from('submissions')
-          .select('*, students:student_id(student_id, profiles:profile_id(first_name, last_name)), assignments:assignment_id(title, max_score, course_id)')
+          .select('*, students:student_id(student_id, profiles:profile_id(first_name, last_name)), assignments:assignment_id(title, max_score, course_id, courses:course_id(subject))')
           .in('assignment_id', assignIds)
           .order('submitted_at', { ascending: false });
         setSubmissions((subData || []) as SubmissionWithStudent[]);
@@ -212,14 +212,33 @@ export default function LMSSection({ profile }: Props) {
   const saveGrade = async () => {
     if (!gradeTarget) return;
     const score = parseFloat(gradeScore);
+    const maxScore = gradeTarget.assignments?.max_score ?? 20;
     if (isNaN(score) || score < 0) return setToast({ msg: 'Enter a valid score', type: 'error' });
+    if (score > maxScore) return setToast({ msg: `Score cannot exceed ${maxScore}`, type: 'error' });
     setGrading(true);
     try {
+      // Update submission record
       await supabase.from('submissions').update({
         score, feedback: gradeFeedback.trim() || null,
         graded_at: new Date().toISOString(), graded_by: profile.id, status: 'graded',
       }).eq('id', gradeTarget.id);
-      setToast({ msg: 'Grade saved', type: 'success' });
+
+      // Also write/update a grade record so it appears in the result card
+      if (gradeTarget.student_id) {
+        const subject = gradeTarget.assignments?.courses?.subject || gradeTarget.assignments?.title || 'General';
+        await supabase.from('grades').upsert({
+          student_id: gradeTarget.student_id,
+          subject,
+          assessment_type: 'Home Work',
+          score,
+          max_score: maxScore,
+          term: topicForm.term || 'First Term',
+          academic_year: topicForm.academic_year || getDefaultAcademicYear(),
+          graded_by: profile.id,
+        }, { onConflict: 'student_id,subject,assessment_type,term,academic_year' });
+      }
+
+      setToast({ msg: 'Grade saved and recorded in gradebook', type: 'success' });
       setGradeTarget(null);
       fetchData();
     } catch (e: unknown) {

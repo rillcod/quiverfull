@@ -20,8 +20,8 @@ interface StudentOption {
   profiles?: { first_name: string; last_name: string } | null;
 }
 
-const ASSESSMENT_TYPES = ['1st CA', '2nd CA', 'Exam', 'Test', 'CA', 'Project', 'Assignment', 'Quiz'];
-const DEFAULT_MAX: Record<string, number> = { '1st CA': 20, '2nd CA': 20, 'Exam': 60, 'Test': 30 };
+const ASSESSMENT_TYPES = ['Home Work', '1st CA', '2nd CA', 'Exam', 'Test', 'CA', 'Project', 'Assignment', 'Quiz'];
+const DEFAULT_MAX: Record<string, number> = { 'Home Work': 20, '1st CA': 20, '2nd CA': 20, 'Exam': 60, 'Test': 30 };
 
 function nigerianGrade(score: number, max: number): { label: string; color: string } {
   const p = max > 0 ? (score / max) * 100 : 0;
