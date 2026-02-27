@@ -47,7 +47,7 @@ export default function StudentFeesSection({ profile }: Props) {
   useEffect(() => { if (studentId) fetchFees(studentId); }, [filterTerm, filterYear]);
 
   const total = fees.reduce((s, f) => s + f.amount, 0);
-  const paid = fees.reduce((s, f) => s + f.paid_amount, 0);
+  const paid = fees.reduce((s, f) => s + (f.paid_amount ?? 0), 0);
   const balance = total - paid;
 
   const fmt = (n: number) => `₦${n.toLocaleString()}`;
@@ -108,12 +108,12 @@ export default function StudentFeesSection({ profile }: Props) {
               </thead>
               <tbody>
                 {fees.map(f => {
-                  const bal = f.amount - f.paid_amount;
+                  const bal = f.amount - (f.paid_amount ?? 0);
                   return (
                     <tr key={f.id} className="border-b border-gray-50 hover:bg-gray-50">
                       <td className="py-3 px-4 font-medium text-gray-800">{f.fee_type}</td>
                       <td className="py-3 px-4 text-gray-700">{fmt(f.amount)}</td>
-                      <td className="py-3 px-4 text-green-600 font-medium">{fmt(f.paid_amount)}</td>
+                      <td className="py-3 px-4 text-green-600 font-medium">{fmt(f.paid_amount ?? 0)}</td>
                       <td className={`py-3 px-4 font-medium ${bal > 0 ? 'text-red-600' : 'text-green-600'}`}>{fmt(bal)}</td>
                       <td className="py-3 px-4 text-gray-500">{new Date(f.due_date).toLocaleDateString()}</td>
                       <td className="py-3 px-4 text-gray-500">{f.term}</td>
