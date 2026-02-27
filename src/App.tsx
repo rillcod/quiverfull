@@ -4,7 +4,6 @@ import { useAuth } from './hooks/useAuth';
 import MainWebsite from './components/website/MainWebsite';
 import AuthLayout from './components/auth/AuthLayout';
 import LoginForm from './components/auth/LoginForm';
-import RegisterForm from './components/auth/RegisterForm';
 import ParentDashboard from './components/dashboards/ParentDashboard';
 import TeacherDashboard from './components/dashboards/TeacherDashboard';
 import AdminDashboard from './components/dashboards/AdminDashboard';
@@ -14,7 +13,6 @@ import { LogOut } from 'lucide-react';
 
 function App() {
   const { user, profile, loading, signOut } = useAuth();
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [showMainWebsite, setShowMainWebsite] = useState(true);
   const [showKidsZone, setShowKidsZone] = useState(false);
 
@@ -53,20 +51,9 @@ function App() {
   if (!user || !profile) {
     return (
       <AuthLayout
-        title={authMode === 'login' ? 'Welcome Back!' : 'Join Our School Family'}
-        subtitle={authMode === 'login'
-          ? 'Please sign in to access your account'
-          : 'Create your account to get started'
-        }
+        title="Welcome Back!"
+        subtitle="Please sign in to access your account"
       >
-        {/* Kids Zone Button */}
-        <div className="mb-6 text-center">
-          <KidsButton onClick={() => {
-            setShowKidsZone(true);
-            setShowMainWebsite(false);
-          }} />
-        </div>
-
         {/* Back to Website Link */}
         <div className="text-center mb-4">
           <button
@@ -77,25 +64,14 @@ function App() {
           </button>
         </div>
 
-        {authMode === 'login' ? (
-          <LoginForm
-            onSuccess={() => {}}
-            onToggleMode={() => setAuthMode('register')}
-          />
-        ) : (
-          <RegisterForm
-            onSuccess={() => {}}
-            onToggleMode={() => setAuthMode('login')}
-          />
-        )}
+        <LoginForm onSuccess={() => {}} />
       </AuthLayout>
     );
   }
 
   // Render appropriate dashboard based on role
   const renderDashboard = () => {
-    // Wrap dashboard with a floating "Main Website" shortcut
-    const addKidsButton = (dashboard: React.ReactElement) => {
+    const withWebsiteButton = (dashboard: React.ReactElement) => {
       return (
         <div className="relative">
           {dashboard}
@@ -113,13 +89,13 @@ function App() {
 
     switch (profile.role) {
       case 'parent':
-        return addKidsButton(<ParentDashboard profile={profile} />);
+        return withWebsiteButton(<ParentDashboard profile={profile} />);
       case 'teacher':
-        return addKidsButton(<TeacherDashboard profile={profile} />);
+        return withWebsiteButton(<TeacherDashboard profile={profile} />);
       case 'admin':
-        return addKidsButton(<AdminDashboard profile={profile} />);
+        return withWebsiteButton(<AdminDashboard profile={profile} />);
       case 'student':
-        return addKidsButton(<StudentDashboard profile={profile} />);
+        return withWebsiteButton(<StudentDashboard profile={profile} />);
       default:
         return (
           <div className="min-h-screen bg-gray-100 flex items-center justify-center">
