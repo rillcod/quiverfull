@@ -383,7 +383,7 @@ export default function LMSSection({ profile }: Props) {
       {/* Assignment Modal */}
       {showAssignModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-800 text-lg">{editAssignment ? 'Edit Assignment' : 'Add Assignment'}</h3>
               <button onClick={() => setShowAssignModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>

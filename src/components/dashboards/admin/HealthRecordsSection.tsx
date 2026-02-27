@@ -171,7 +171,7 @@ export default function HealthRecordsSection({ profile }: Props) {
       {/* Add / Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800 text-lg">{editTarget ? 'Edit Health Record' : 'Add Health Record'}</h3>
               <button onClick={() => setShowModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>

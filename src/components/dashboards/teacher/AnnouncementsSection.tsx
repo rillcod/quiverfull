@@ -53,7 +53,7 @@ export default function AnnouncementsSection({ profile }: Props) {
       </div>
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto p-6">
             <h3 className="font-bold text-gray-800 text-lg mb-4">Post Announcement</h3>
             <div className="space-y-3">
               <input placeholder="Title" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" />

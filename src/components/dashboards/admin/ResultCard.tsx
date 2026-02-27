@@ -522,7 +522,8 @@ export default function ResultCard({ data, onPrint }: Props) {
         <div
           id="tqs-result-card"
           style={{
-            width: '210mm',
+            width: '100%',
+            maxWidth: '210mm',
             minHeight: '297mm',
             background: '#fff',
             margin: '0 auto',

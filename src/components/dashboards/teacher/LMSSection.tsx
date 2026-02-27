@@ -599,7 +599,7 @@ export default function LMSSection({ profile }: Props) {
       {/* ── Add Assignment Modal ── */}
       {showAssignModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-800 text-lg">Add Assignment</h3>
               <button onClick={() => setShowAssignModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
@@ -660,7 +660,7 @@ export default function LMSSection({ profile }: Props) {
       {/* ── Grade Submission Modal ── */}
       {gradeTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <div>
                 <h3 className="font-bold text-gray-800 text-lg">Grade Submission</h3>
@@ -719,7 +719,7 @@ export default function LMSSection({ profile }: Props) {
       {/* ── Material Viewer Modal ── */}
       {viewTopic && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <div>
                 <p className="text-xs font-medium text-pink-600 uppercase">{viewTopic.subject}</p>

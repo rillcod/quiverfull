@@ -729,7 +729,8 @@ export default function ResultsSection({ profile }: Props) {
           ) : (
             /* ── Student List view ── */
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[500px]">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs text-gray-500 uppercase">
                     <th className="py-3 px-3 w-10">
@@ -791,6 +792,7 @@ export default function ResultsSection({ profile }: Props) {
                   )}
                 </tbody>
               </table>
+              </div>
             </div>
           )}
         </>

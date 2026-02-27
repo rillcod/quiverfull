@@ -385,7 +385,7 @@ export default function FeesSection({ profile: _profile }: Props) {
       {/* Add Fee Modal */}
       {showAddFee && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2"><DollarSign className="w-5 h-5 text-emerald-500" /> Add Fee Record</h3>
               <button onClick={() => setShowAddFee(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
@@ -446,7 +446,7 @@ export default function FeesSection({ profile: _profile }: Props) {
       {/* Template Add/Edit Modal */}
       {showTemplateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-800 text-lg">{editingTemplate ? 'Edit Template' : 'Add Fee Template'}</h3>
               <button onClick={() => setShowTemplateModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
