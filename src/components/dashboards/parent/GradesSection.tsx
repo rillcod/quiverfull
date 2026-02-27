@@ -63,13 +63,15 @@ function gradeColor(pct: number) {
 }
 
 function computeSubjects(grades: Grade[]): SubjectResult[] {
-  const map = new Map<string, { ca1: { score: number; max: number } | null; ca2: { score: number; max: number } | null; exam: { score: number; max: number } | null }>();
+  const map = new Map<string, { ca1: { score: number; max: number } | null; ca2: { score: number; max: number } | null; exam: { score: number; max: number } | null; hw: { score: number; max: number } | null }>();
   for (const g of grades) {
     const key = g.subject.trim();
-    if (!map.has(key)) map.set(key, { ca1: null, ca2: null, exam: null });
+    if (!map.has(key)) map.set(key, { ca1: null, ca2: null, exam: null, hw: null });
     const entry = map.get(key)!;
-    const type = g.assessment_type.toLowerCase();
-    if (type === '1st ca' || type === 'first ca') {
+    const type = g.assessment_type.toLowerCase().trim();
+    if (type === 'home work' || type === 'homework') {
+      entry.hw = { score: g.score, max: g.max_score };
+    } else if (type === '1st ca' || type === 'first ca') {
       entry.ca1 = { score: g.score, max: g.max_score };
     } else if (type === '2nd ca' || type === 'second ca') {
       entry.ca2 = { score: g.score, max: g.max_score };
@@ -82,11 +84,12 @@ function computeSubjects(grades: Grade[]): SubjectResult[] {
     }
   }
   return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([subject, s]) => {
-    const ca1 = s.ca1 ? Math.round((s.ca1.score / s.ca1.max) * 20) : 0;
-    const ca2 = s.ca2 ? Math.round((s.ca2.score / s.ca2.max) * 20) : 0;
+    const ca1  = s.ca1  ? Math.round((s.ca1.score  / s.ca1.max)  * 20) : 0;
+    const ca2  = s.ca2  ? Math.round((s.ca2.score  / s.ca2.max)  * 20) : 0;
     const exam = s.exam ? Math.round((s.exam.score / s.exam.max) * 60) : 0;
+    const hw   = s.hw   ? Math.round((s.hw.score   / s.hw.max)   * 20) : undefined;
     const total = ca1 + ca2 + exam;
-    return { subject, ca1, ca2, exam, total, ...getNigerianGrade(total) };
+    return { subject, ca1, ca2, exam, homework: hw, total, ...getNigerianGrade(total) };
   });
 }
 

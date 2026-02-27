@@ -47,24 +47,26 @@ const defaultMeta: ResultSheetMeta = {
 };
 
 function computeSubjects(grades: GradeRow[]): SubjectResult[] {
-  const map = new Map<string, { ca1: { score: number; max: number } | null; ca2: { score: number; max: number } | null; exam: { score: number; max: number } | null }>();
+  const map = new Map<string, { ca1: { score: number; max: number } | null; ca2: { score: number; max: number } | null; exam: { score: number; max: number } | null; hw: { score: number; max: number } | null }>();
   for (const g of grades) {
     const key = g.subject.trim();
-    if (!map.has(key)) map.set(key, { ca1: null, ca2: null, exam: null });
+    if (!map.has(key)) map.set(key, { ca1: null, ca2: null, exam: null, hw: null });
     const entry = map.get(key)!;
-    const type = g.assessment_type.toLowerCase();
-    if (type === '1st ca' || type === 'first ca') entry.ca1 = { score: g.score, max: g.max_score };
+    const type = g.assessment_type.toLowerCase().trim();
+    if (type === 'home work' || type === 'homework') entry.hw = { score: g.score, max: g.max_score };
+    else if (type === '1st ca' || type === 'first ca') entry.ca1 = { score: g.score, max: g.max_score };
     else if (type === '2nd ca' || type === 'second ca') entry.ca2 = { score: g.score, max: g.max_score };
     else if (type === 'exam' || type === 'examination' || type === 'final exam') entry.exam = { score: g.score, max: g.max_score };
     else if (!entry.ca1) entry.ca1 = { score: g.score, max: g.max_score };
     else if (!entry.ca2) entry.ca2 = { score: g.score, max: g.max_score };
   }
   return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([subject, s]) => {
-    const ca1 = s.ca1 ? Math.round((s.ca1.score / s.ca1.max) * 20) : 0;
-    const ca2 = s.ca2 ? Math.round((s.ca2.score / s.ca2.max) * 20) : 0;
+    const ca1  = s.ca1  ? Math.round((s.ca1.score  / s.ca1.max)  * 20) : 0;
+    const ca2  = s.ca2  ? Math.round((s.ca2.score  / s.ca2.max)  * 20) : 0;
     const exam = s.exam ? Math.round((s.exam.score / s.exam.max) * 60) : 0;
+    const hw   = s.hw   ? Math.round((s.hw.score   / s.hw.max)   * 20) : undefined;
     const total = ca1 + ca2 + exam;
-    return { subject, ca1, ca2, exam, total, ...getNigerianGrade(total) };
+    return { subject, ca1, ca2, exam, homework: hw, total, ...getNigerianGrade(total) };
   });
 }
 
@@ -346,7 +348,8 @@ export default function TeacherResultsSection({ profile }: Props) {
                 <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
               </div>
             ) : (
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[520px]">
                 <thead>
                   <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs text-gray-500 uppercase">
                     <th className="py-3 px-4">#</th>
@@ -399,6 +402,7 @@ export default function TeacherResultsSection({ profile }: Props) {
                   )}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         </>
@@ -418,29 +422,29 @@ export default function TeacherResultsSection({ profile }: Props) {
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl my-4">
 
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl z-10">
-              <div>
-                <h3 className="font-bold text-gray-900">
+            <div className="flex flex-wrap items-center justify-between gap-2 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl z-10">
+              <div className="min-w-0">
+                <h3 className="font-bold text-gray-900 truncate">
                   {activeStudent.profiles?.first_name} {activeStudent.profiles?.last_name}
                 </h3>
                 <p className="text-xs text-gray-500 mt-0.5">{selectedTerm} · {academicYear} · {activeStudent.classes?.name}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
                   <button onClick={() => setModalTab('preview')} className={`px-3 py-1.5 ${modalTab === 'preview' ? 'bg-blue-700 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
                     Preview
                   </button>
                   <button onClick={() => setModalTab('edit')} className={`px-3 py-1.5 ${modalTab === 'edit' ? 'bg-blue-700 text-white' : 'text-gray-600 hover:bg-gray-50'}`}>
-                    Edit Sheet
+                    Edit
                   </button>
                 </div>
-                <button onClick={() => { setActiveStudent(null); setCardData(null); setDeleteConfirm(false); }} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                <button onClick={() => { setActiveStudent(null); setCardData(null); setDeleteConfirm(false); }} className="p-1.5 hover:bg-gray-100 rounded-lg flex-shrink-0">
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               {loadingCard ? (
                 <div className="flex justify-center py-16">
                   <div className="w-8 h-8 border-4 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
@@ -480,7 +484,7 @@ export default function TeacherResultsSection({ profile }: Props) {
                       {/* Attendance */}
                       <div>
                         <h4 className="font-semibold text-gray-800 text-sm mb-3">Attendance Record</h4>
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Total School Days</label>
                             <input type="number" min={0} value={metaForm.total_school_days}
@@ -526,7 +530,7 @@ export default function TeacherResultsSection({ profile }: Props) {
                       {/* Next Term */}
                       <div>
                         <h4 className="font-semibold text-gray-800 text-sm mb-3">Next Term Information</h4>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Next Term Begins</label>
                             <input type="date" value={metaForm.next_term_begins}
