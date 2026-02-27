@@ -53,6 +53,7 @@ export default function ParentsSection({ profile: _profile }: Props) {
   const [showLink, setShowLink] = useState<ParentWithProfile | null>(null);
   const [linkSearch, setLinkSearch] = useState('');
   const [linkSelected, setLinkSelected] = useState<Set<string>>(new Set());
+  const [linkPrimary, setLinkPrimary] = useState<string | null>(null);
   const [linkSaving, setLinkSaving] = useState(false);
 
   // Reset password
@@ -193,6 +194,7 @@ export default function ParentsSection({ profile: _profile }: Props) {
     setShowLink(p);
     setLinkSearch('');
     setLinkSelected(new Set());
+    setLinkPrimary(null);
   };
 
   const toggleLinkStudent = (id: string) => {
@@ -208,7 +210,7 @@ export default function ParentsSection({ profile: _profile }: Props) {
     setLinkSaving(true);
     try {
       const rows = Array.from(linkSelected).map(student_id => ({
-        parent_id: showLink.id, student_id, is_primary: false,
+        parent_id: showLink.id, student_id, is_primary: student_id === linkPrimary,
       }));
       await supabase.from('student_parents').upsert(rows, { onConflict: 'student_id,parent_id' });
       setToast({ msg: `Linked ${linkSelected.size} student${linkSelected.size > 1 ? 's' : ''}`, type: 'success' });
@@ -529,17 +531,27 @@ export default function ParentsSection({ profile: _profile }: Props) {
               ) : (
                 linkableStudents.map(s => {
                   const checked = linkSelected.has(s.id);
+                  const isPrimary = linkPrimary === s.id;
                   return (
-                    <button key={s.id} onClick={() => toggleLinkStudent(s.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${checked ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-gray-50 border border-transparent'}`}>
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'}`}>
-                        {checked && <Check className="w-3 h-3 text-white" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-800 text-sm">{s.profiles?.first_name} {s.profiles?.last_name}</p>
-                        <p className="text-xs text-gray-400">{s.student_id}</p>
-                      </div>
-                    </button>
+                    <div key={s.id} className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-colors ${checked ? 'bg-indigo-50 border border-indigo-200' : 'hover:bg-gray-50 border border-transparent'}`}>
+                      <button onClick={() => toggleLinkStudent(s.id)} className="flex items-center gap-3 flex-1 text-left min-w-0">
+                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors ${checked ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300'}`}>
+                          {checked && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-800 text-sm">{s.profiles?.first_name} {s.profiles?.last_name}</p>
+                          <p className="text-xs text-gray-400">{s.student_id}</p>
+                        </div>
+                      </button>
+                      {checked && (
+                        <button
+                          onClick={() => setLinkPrimary(isPrimary ? null : s.id)}
+                          className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full border font-medium transition-colors ${isPrimary ? 'bg-amber-500 text-white border-amber-500' : 'border-gray-300 text-gray-400 hover:border-amber-400 hover:text-amber-600'}`}
+                          title="Mark as primary parent">
+                          {isPrimary ? '★ Primary' : '☆ Primary'}
+                        </button>
+                      )}
+                    </div>
                   );
                 })
               )}

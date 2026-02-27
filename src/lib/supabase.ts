@@ -901,6 +901,58 @@ export type Database = {
           is_active?: boolean;
         };
       };
+      admission_applications: {
+        Row: {
+          id: string;
+          parent_name: string;
+          email: string;
+          phone: string;
+          address: string;
+          child_name: string;
+          child_age: string | null;
+          date_of_birth: string | null;
+          gender: string | null;
+          program: string;
+          previous_school: string | null;
+          medical_conditions: string | null;
+          emergency_contact: string | null;
+          emergency_phone: string | null;
+          message: string | null;
+          status: string;
+          admin_notes: string | null;
+          reviewed_by: string | null;
+          reviewed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          parent_name: string;
+          email: string;
+          phone: string;
+          address: string;
+          child_name: string;
+          child_age?: string | null;
+          date_of_birth?: string | null;
+          gender?: string | null;
+          program: string;
+          previous_school?: string | null;
+          medical_conditions?: string | null;
+          emergency_contact?: string | null;
+          emergency_phone?: string | null;
+          message?: string | null;
+          status?: string;
+          admin_notes?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          status?: string;
+          admin_notes?: string | null;
+          reviewed_by?: string | null;
+          reviewed_at?: string | null;
+        };
+      };
     };
   };
 };
@@ -971,6 +1023,9 @@ export type CbtSessionRow = Database['public']['Tables']['cbt_sessions']['Row'];
 export type CbtSessionInsert = Database['public']['Tables']['cbt_sessions']['Insert'];
 export type CbtAnswerRow = Database['public']['Tables']['cbt_answers']['Row'];
 export type CbtAnswerInsert = Database['public']['Tables']['cbt_answers']['Insert'];
+export type AdmissionApplicationRow = Database['public']['Tables']['admission_applications']['Row'];
+export type AdmissionApplicationInsert = Database['public']['Tables']['admission_applications']['Insert'];
+export type AdmissionApplicationUpdate = Database['public']['Tables']['admission_applications']['Update'];
 
 // Common relation shapes (for selects with embedded relations)
 export interface ProfileBasic {

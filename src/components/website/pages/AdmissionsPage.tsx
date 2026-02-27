@@ -53,29 +53,25 @@ export default function AdmissionsPage() {
     setStatus('submitting');
     setErrorMsg('');
     try {
-      const { data, error } = await supabase
-        .from('admission_applications')
-        .insert({
-          parent_name: form.parentName,
-          email: form.email,
-          phone: form.phone,
-          address: form.address,
-          child_name: form.childName,
-          child_age: form.childAge,
-          date_of_birth: form.dateOfBirth || null,
-          gender: form.gender,
-          program: form.program,
-          previous_school: form.previousSchool,
-          medical_conditions: form.medicalConditions,
-          emergency_contact: form.emergencyContact,
-          emergency_phone: form.emergencyPhone,
-          message: form.message,
-        })
-        .select('id')
-        .single();
+      const { data, error } = await supabase.rpc('submit_admission_application', {
+        p_parent_name:        form.parentName,
+        p_email:              form.email,
+        p_phone:              form.phone,
+        p_address:            form.address,
+        p_child_name:         form.childName,
+        p_child_age:          form.childAge || null,
+        p_date_of_birth:      form.dateOfBirth || null,
+        p_gender:             form.gender || null,
+        p_program:            form.program,
+        p_previous_school:    form.previousSchool || null,
+        p_medical_conditions: form.medicalConditions || null,
+        p_emergency_contact:  form.emergencyContact,
+        p_emergency_phone:    form.emergencyPhone,
+        p_message:            form.message || null,
+      });
 
       if (error) throw error;
-      const ref = `TQS-${(data?.id as string || '').substring(0, 8).toUpperCase()}`;
+      const ref = `TQS-${((data as string) || '').substring(0, 8).toUpperCase()}`;
       setRefId(ref);
       setStatus('success');
       setForm(EMPTY_FORM);

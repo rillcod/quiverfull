@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   GraduationCap, Users, DollarSign, AlertTriangle, UserCheck,
   BookOpen, TrendingUp, Activity, Bell, Calendar,
-  ClipboardCheck, BarChart3, Award, RefreshCw, UserPlus, Bus, Heart, Settings
+  ClipboardCheck, BarChart3, ClipboardList, RefreshCw, UserPlus, Bus, Heart, Settings
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useSchoolSettings } from '../../../hooks/useSchoolSettings';
@@ -26,7 +26,7 @@ export default function OverviewSection({ profile: _profile, onNavigate }: Overv
     totalRevenue: 0, pendingFees: 0, overdueAmount: 0,
     attendanceRate: 0, presentToday: 0, absentToday: 0,
     totalCourses: 0, totalAssignments: 0,
-    publishedAnnouncements: 0,
+    publishedAnnouncements: 0, pendingAdmissions: 0,
   });
   const [alerts, setAlerts] = useState<OverviewAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +50,7 @@ export default function OverviewSection({ profile: _profile, onNavigate }: Overv
         { count: courseCount },
         { count: assignCount },
         { count: annCount },
+        { count: pendingAdmCount },
       ] = await Promise.all([
         supabase.from('students').select('*', { count: 'exact', head: true }).eq('is_active', true),
         supabase.from('teachers').select('*', { count: 'exact', head: true }).eq('is_active', true),
@@ -60,6 +61,7 @@ export default function OverviewSection({ profile: _profile, onNavigate }: Overv
         supabase.from('courses').select('*', { count: 'exact', head: true }).eq('is_active', true),
         supabase.from('assignments').select('*', { count: 'exact', head: true }),
         supabase.from('announcements').select('*', { count: 'exact', head: true }).eq('published', true),
+        supabase.from('admission_applications').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
 
       const feeRows = (feesData || []) as Pick<FeeRow, 'amount' | 'paid_amount' | 'status'>[];
@@ -79,12 +81,13 @@ export default function OverviewSection({ profile: _profile, onNavigate }: Overv
         totalClasses: classCount || 0, totalRevenue, pendingFees, overdueAmount,
         attendanceRate, presentToday, absentToday,
         totalCourses: courseCount || 0, totalAssignments: assignCount || 0,
-        publishedAnnouncements: annCount || 0,
+        publishedAnnouncements: annCount || 0, pendingAdmissions: pendingAdmCount || 0,
       });
 
       // Build dynamic alerts
       const alertList: OverviewAlert[] = [];
       if (overdueAmount > 0) alertList.push({ type: 'error', msg: `${currency}${overdueAmount.toLocaleString()} in overdue fees`, action: 'fees' });
+      if ((pendingAdmCount || 0) > 0) alertList.push({ type: 'warning', msg: `${pendingAdmCount} admission application${(pendingAdmCount || 0) > 1 ? 's' : ''} awaiting review`, action: 'admissions' });
       if (attendanceRate < 80) alertList.push({ type: 'warning', msg: `Weekly attendance at ${attendanceRate}% — below target`, action: 'attendance' });
       if (pendingFees > 0) alertList.push({ type: 'warning', msg: `${currency}${pendingFees.toLocaleString()} in pending payments`, action: 'fees' });
       if (attendanceRate >= 90) alertList.push({ type: 'success', msg: `Excellent attendance this week: ${attendanceRate}%`, action: 'attendance' });
@@ -104,11 +107,12 @@ export default function OverviewSection({ profile: _profile, onNavigate }: Overv
     { label: `Revenue (${currency})`, value: `${currency}${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'from-emerald-500 to-teal-600', action: 'fees' },
     { label: `Pending Fees (${currency})`, value: `${currency}${stats.pendingFees.toLocaleString()}`, icon: AlertTriangle, color: 'from-orange-500 to-red-500', action: 'fees' },
     { label: 'Attendance (Week)', value: `${stats.attendanceRate}%`, icon: UserCheck, color: 'from-cyan-500 to-sky-600', action: 'attendance' },
-    { label: 'LMS Courses', value: stats.totalCourses, icon: Award, color: 'from-pink-500 to-rose-500', action: 'lms' },
+    { label: 'Pending Admissions', value: stats.pendingAdmissions, icon: ClipboardList, color: 'from-orange-500 to-amber-500', action: 'admissions' },
     { label: 'Announcements', value: stats.publishedAnnouncements, icon: Bell, color: 'from-indigo-500 to-indigo-600', action: 'announcements' },
   ];
 
   const quickActions = [
+    { label: 'Admissions', icon: ClipboardList, color: 'orange', section: 'admissions' },
     { label: 'Manage Students', icon: GraduationCap, color: 'blue', section: 'students' },
     { label: 'Manage Teachers', icon: Users, color: 'green', section: 'teachers' },
     { label: 'Parents', icon: UserPlus, color: 'amber', section: 'parents' },

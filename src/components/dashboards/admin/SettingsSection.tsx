@@ -5,10 +5,10 @@ import type { ProfileRow, SchoolSettingsRow } from '../../../lib/supabase';
 
 const ALL_TABLES = [
   'profiles', 'classes', 'students', 'teachers', 'parents', 'student_parents',
-  'attendance', 'grades', 'fees', 'announcements', 'courses', 'assignments',
+  'attendance', 'grades', 'fees', 'fee_templates', 'announcements', 'courses', 'assignments',
   'submissions', 'course_materials', 'events', 'health_records', 'transport', 'school_settings',
-  'result_sheets', 'cbt_exams', 'cbt_questions', 'cbt_sessions', 'cbt_answers',
-  'timetable', 'messages',
+  'subjects', 'result_sheets', 'cbt_exams', 'cbt_questions', 'cbt_sessions', 'cbt_answers',
+  'timetable', 'messages', 'admission_applications',
 ] as const;
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
