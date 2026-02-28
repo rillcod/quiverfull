@@ -62,20 +62,20 @@ export default function Header({ onLoginClick, onKidsZoneClick }: HeaderProps) {
       {/* Main Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-20 xl:h-16">
 
             {/* Logo */}
             <Link to="/" className="flex items-center gap-2.5 flex-shrink-0 group">
               <img
                 src="/logo.jpg"
                 alt="The Quiverfull School"
-                className="w-11 h-11 rounded-full object-contain bg-white"
+                className="w-14 h-14 xl:w-11 xl:h-11 rounded-full object-contain bg-white"
               />
               <div className="leading-tight">
-                <div className="text-[15px] font-bold text-gray-900 tracking-tight">
+                <div className="text-[17px] xl:text-[15px] font-bold text-gray-900 tracking-tight">
                   The Quiverfull School
                 </div>
-                <div className="text-[10px] text-gray-500 tracking-wide uppercase">
+                <div className="text-[11px] xl:text-[10px] text-gray-500 tracking-wide uppercase">
                   Where Learning is Fun
                 </div>
               </div>
@@ -121,7 +121,7 @@ export default function Header({ onLoginClick, onKidsZoneClick }: HeaderProps) {
               aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
               className="xl:hidden p-2 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition-colors"
             >
-              {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
