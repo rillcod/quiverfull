@@ -13,7 +13,7 @@ interface StudentWithProfile {
   profiles?: { first_name: string; last_name: string; email?: string } | null;
 }
 interface UnassignedStudent {
-  id: string; student_id: string;
+  id: string; student_id: string; class_id?: string | null;
   profiles?: { first_name: string; last_name: string } | null;
 }
 interface AllClass {
@@ -69,9 +69,9 @@ export default function ClassesSection({ profile }: Props) {
     setShowAddModal(true);
     setAddSearch('');
     setAddLoading(true);
+    // Load ALL active students so teacher can pick from any, including already-assigned ones
     const { data } = await supabase.from('students')
-      .select('id, student_id, profiles:profile_id(first_name,last_name)')
-      .is('class_id', null)
+      .select('id, student_id, class_id, profiles:profile_id(first_name,last_name)')
       .eq('is_active', true)
       .order('student_id');
     setUnassigned((data || []) as unknown as UnassignedStudent[]);
@@ -81,15 +81,15 @@ export default function ClassesSection({ profile }: Props) {
   const assignStudent = async (studentId: string) => {
     if (!selectedClass) return;
     setAssigning(studentId);
-    const { error } = await supabase.from('students')
-      .update({ class_id: selectedClass.id })
-      .eq('id', studentId);
+    // Use SECURITY DEFINER RPC so teacher can assign any student to their own class
+    const { error } = await supabase.rpc('teacher_assign_student', {
+      p_student_id: studentId,
+      p_class_id: selectedClass.id,
+    } as never);
     if (error) {
       setToast({ msg: 'Failed to assign student: ' + error.message, type: 'error' });
     } else {
-      setUnassigned(u => u.filter(s => s.id !== studentId));
       setToast({ msg: 'Student added to class', type: 'success' });
-      // Refresh roster and class count
       await loadStudents(selectedClass);
       fetchClasses();
     }
@@ -311,7 +311,7 @@ export default function ClassesSection({ profile }: Props) {
             <div className="flex items-center justify-between p-5 border-b">
               <div>
                 <h3 className="font-bold text-gray-900">Add Student to {selectedClass.name}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">Only students without a class assignment are shown</p>
+                <p className="text-xs text-gray-500 mt-0.5">All active students — already assigned ones will be moved to this class</p>
               </div>
               <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X size={18} className="text-gray-500" />
@@ -342,8 +342,9 @@ export default function ClassesSection({ profile }: Props) {
               ) : filteredUnassigned.map(s => {
                 const fullName = `${s.profiles?.first_name ?? ''} ${s.profiles?.last_name ?? ''}`.trim();
                 const isAssigning = assigning === s.id;
+                const alreadyHere = s.class_id === selectedClass?.id;
                 return (
-                  <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50 transition-colors">
+                  <div key={s.id} className={`flex items-center justify-between p-3 rounded-lg border transition-colors ${alreadyHere ? 'border-green-200 bg-green-50' : 'border-gray-100 hover:border-blue-200 hover:bg-blue-50'}`}>
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                         {(s.profiles?.first_name?.[0] ?? '?')}{(s.profiles?.last_name?.[0] ?? '')}
@@ -351,20 +352,24 @@ export default function ClassesSection({ profile }: Props) {
                       <div>
                         <p className="font-medium text-gray-800 text-sm">{fullName || '—'}</p>
                         <p className="text-xs text-gray-400 font-mono">{s.student_id}</p>
+                        {alreadyHere && <p className="text-xs text-green-600 font-medium">Already in this class</p>}
+                        {s.class_id && !alreadyHere && <p className="text-xs text-orange-500">In another class</p>}
                       </div>
                     </div>
-                    <button
-                      onClick={() => assignStudent(s.id)}
-                      disabled={isAssigning}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg font-medium disabled:opacity-50"
-                    >
-                      {isAssigning ? (
-                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Check size={12} />
-                      )}
-                      {isAssigning ? 'Adding…' : 'Add'}
-                    </button>
+                    {!alreadyHere && (
+                      <button
+                        onClick={() => assignStudent(s.id)}
+                        disabled={isAssigning}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded-lg font-medium disabled:opacity-50"
+                      >
+                        {isAssigning ? (
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Check size={12} />
+                        )}
+                        {isAssigning ? 'Adding…' : 'Add'}
+                      </button>
+                    )}
                   </div>
                 );
               })}

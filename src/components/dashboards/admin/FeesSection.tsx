@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { DollarSign, Search, Plus, X, Download, Layers, Edit2, Trash2, Zap } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { ProfileRow, FeeRow, FeeInsert, FeeStatus, FeeTemplateRow, FeeTemplateInsert } from '../../../lib/supabase';
-import { TERMS, getDefaultAcademicYear } from '../../../lib/academicConfig';
+import { TERMS, getDefaultAcademicYear, getAcademicYearOptions } from '../../../lib/academicConfig';
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
 
@@ -430,8 +430,10 @@ export default function FeesSection({ profile: _profile }: Props) {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Academic Year</label>
-                  <input value={addFeeForm.academic_year} onChange={e => setAddFeeForm(f => ({ ...f, academic_year: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <select value={addFeeForm.academic_year} onChange={e => setAddFeeForm(f => ({ ...f, academic_year: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
@@ -479,8 +481,10 @@ export default function FeesSection({ profile: _profile }: Props) {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Academic Year</label>
-                  <input value={templateForm.academic_year} onChange={e => setTemplateForm(f => ({ ...f, academic_year: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                  <select value={templateForm.academic_year} onChange={e => setTemplateForm(f => ({ ...f, academic_year: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+                  </select>
                 </div>
               </div>
               <div>

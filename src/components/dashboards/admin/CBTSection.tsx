@@ -4,7 +4,7 @@ import {
   CheckCircle2, Circle, BarChart3, BookOpen, Clock
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { TERMS, getDefaultAcademicYear } from '../../../lib/academicConfig';
+import { TERMS, getDefaultAcademicYear, getAcademicYearOptions } from '../../../lib/academicConfig';
 import type { ProfileRow, CbtExamRow, CbtQuestionRow, ClassRow } from '../../../lib/supabase';
 import CBTQuestionTools from '../shared/CBTQuestionTools';
 
@@ -575,8 +575,10 @@ function ExamModal({ form, setForm, classes, onClose, onSave, saving, isEdit }: 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">Academic Year</label>
-              <input value={form.academic_year} onChange={e => setForm(f => ({ ...f, academic_year: e.target.value }))}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <select value={form.academic_year} onChange={e => setForm(f => ({ ...f, academic_year: e.target.value }))}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+              </select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">

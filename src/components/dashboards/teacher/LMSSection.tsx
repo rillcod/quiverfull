@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   BookOpen, FileText, Users, Plus, X, CheckCircle, Clock, Star,
-  RefreshCw, ChevronDown, ChevronRight, Eye, Trash2, Layers,
+  RefreshCw, ChevronDown, ChevronRight, Eye, Trash2, Layers, Edit2,
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { TERMS, getDefaultAcademicYear, getAcademicYearOptions } from '../../../lib/academicConfig';
@@ -61,9 +61,13 @@ export default function LMSSection({ profile }: Props) {
 
   // Assignment modal
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<AssignmentWithCourse | null>(null);
+  const [deleteAssignTarget, setDeleteAssignTarget] = useState<string | null>(null);
   const [assignForm, setAssignForm] = useState({
     course_id: '', title: '', description: '', due_date: '',
     max_score: '20', type: 'homework' as AssignmentType,
+    // Quick-create fields (used when no pre-existing topic is selected)
+    quickSubject: '', quickClassId: '', quickTerm: 'First Term', quickYear: getDefaultAcademicYear(),
   });
 
   // Grade modal
@@ -185,19 +189,80 @@ export default function LMSSection({ profile }: Props) {
     fetchData();
   };
 
-  const deleteAssignment = async (id: string) => {
-    if (!confirm('Delete this assignment? This will also remove all submissions.')) return;
-    await supabase.from('assignments').delete().eq('id', id);
+  const closeAssignModal = () => {
+    setShowAssignModal(false);
+    setEditingAssignment(null);
+    setAssignForm({ course_id: '', title: '', description: '', due_date: '', max_score: '20', type: 'homework', quickSubject: '', quickClassId: '', quickTerm: 'First Term', quickYear: getDefaultAcademicYear() });
+  };
+
+  const openEditAssignment = (a: AssignmentWithCourse) => {
+    setEditingAssignment(a);
+    setAssignForm({
+      course_id: a.course_id,
+      title: a.title,
+      description: a.description ?? '',
+      due_date: a.due_date ? new Date(a.due_date).toISOString().slice(0, 16) : '',
+      max_score: String(a.max_score ?? 20),
+      type: a.type,
+      quickSubject: '', quickClassId: '', quickTerm: 'First Term', quickYear: getDefaultAcademicYear(),
+    });
+    setShowAssignModal(true);
+  };
+
+  const deleteAssignment = async () => {
+    if (!deleteAssignTarget) return;
+    await supabase.from('assignments').delete().eq('id', deleteAssignTarget);
     setToast({ msg: 'Assignment deleted', type: 'success' });
+    setDeleteAssignTarget(null);
     fetchData();
   };
 
   const addAssignment = async () => {
-    if (!assignForm.course_id || !assignForm.title.trim()) return setToast({ msg: 'Subject and title required', type: 'error' });
+    if (!assignForm.title.trim()) return setToast({ msg: 'Assignment title required', type: 'error' });
     setSaving(true);
     try {
+      // Edit mode
+      if (editingAssignment) {
+        const { error } = await supabase.from('assignments').update({
+          title: assignForm.title.trim(),
+          description: assignForm.description.trim() || null,
+          due_date: assignForm.due_date ? new Date(assignForm.due_date).toISOString() : null,
+          max_score: parseFloat(assignForm.max_score) || 20,
+          type: assignForm.type,
+        }).eq('id', editingAssignment.id);
+        if (error) throw error;
+        setToast({ msg: 'Assignment updated', type: 'success' });
+        closeAssignModal();
+        fetchData();
+        setSaving(false);
+        return;
+      }
+
+      // Create mode
+      let courseId = assignForm.course_id;
+
+      // If no existing topic selected, auto-create one from the quick fields
+      if (!courseId) {
+        if (!assignForm.quickSubject || !assignForm.quickClassId) {
+          setToast({ msg: 'Please select a topic or provide a subject and class', type: 'error' });
+          setSaving(false);
+          return;
+        }
+        const topicTitle = assignForm.title.trim();
+        const { data: newCourse, error: courseErr } = await supabase.from('courses').insert({
+          subject: assignForm.quickSubject,
+          title: topicTitle,
+          class_id: assignForm.quickClassId || null,
+          teacher_id: profile.id,
+          term: assignForm.quickTerm,
+          academic_year: assignForm.quickYear,
+        } as CourseInsert).select('id').single();
+        if (courseErr) throw courseErr;
+        courseId = newCourse.id;
+      }
+
       const payload: AssignmentInsert = {
-        course_id: assignForm.course_id, title: assignForm.title.trim(),
+        course_id: courseId, title: assignForm.title.trim(),
         description: assignForm.description.trim() || null,
         due_date: assignForm.due_date ? new Date(assignForm.due_date).toISOString() : null,
         max_score: parseFloat(assignForm.max_score) || 20,
@@ -205,11 +270,10 @@ export default function LMSSection({ profile }: Props) {
       };
       await supabase.from('assignments').insert(payload);
       setToast({ msg: 'Assignment created', type: 'success' });
-      setShowAssignModal(false);
-      setAssignForm({ course_id: '', title: '', description: '', due_date: '', max_score: '20', type: 'homework' });
+      closeAssignModal();
       fetchData();
     } catch (e: unknown) {
-      setToast({ msg: e instanceof Error ? e.message : 'Failed to create assignment', type: 'error' });
+      setToast({ msg: e instanceof Error ? e.message : 'Failed to save assignment', type: 'error' });
     }
     setSaving(false);
   };
@@ -276,7 +340,7 @@ export default function LMSSection({ profile }: Props) {
             </button>
           )}
           {tab === 'assignments' && (
-            <button onClick={() => { setAssignForm({ course_id: '', title: '', description: '', due_date: '', max_score: '20', type: 'homework' }); setShowAssignModal(true); }}
+            <button onClick={() => { setEditingAssignment(null); setAssignForm({ course_id: '', title: '', description: '', due_date: '', max_score: '20', type: 'homework', quickSubject: '', quickClassId: classes[0]?.id ?? '', quickTerm: 'First Term', quickYear: getDefaultAcademicYear() }); setShowAssignModal(true); }}
               className="flex items-center gap-1.5 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-medium hover:bg-pink-700">
               <Plus className="w-4 h-4" /> Add Assignment
             </button>
@@ -425,10 +489,24 @@ export default function LMSSection({ profile }: Props) {
                             </button>
                           </td>
                           <td className="py-3 px-4">
-                            <button onClick={() => deleteAssignment(a.id)}
-                              className="p-1.5 hover:bg-red-50 rounded-lg text-red-400" title="Delete assignment">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => openEditAssignment(a)}
+                                className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-400" title="Edit assignment">
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              {deleteAssignTarget === a.id ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs text-red-600 font-medium">Sure?</span>
+                                  <button onClick={deleteAssignment} className="px-2 py-0.5 bg-red-600 text-white rounded text-xs font-medium">Yes</button>
+                                  <button onClick={() => setDeleteAssignTarget(null)} className="px-2 py-0.5 border border-gray-200 rounded text-xs">No</button>
+                                </div>
+                              ) : (
+                                <button onClick={() => setDeleteAssignTarget(a.id)}
+                                  className="p-1.5 hover:bg-red-50 rounded-lg text-red-400" title="Delete assignment">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -633,25 +711,69 @@ export default function LMSSection({ profile }: Props) {
         </div>
       )}
 
-      {/* ── Add Assignment Modal ── */}
+      {/* ── Add / Edit Assignment Modal ── */}
       {showAssignModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-bold text-gray-800 text-lg">Add Assignment</h3>
-              <button onClick={() => setShowAssignModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+              <h3 className="font-bold text-gray-800 text-lg">{editingAssignment ? 'Edit Assignment' : 'Add Assignment'}</h3>
+              <button onClick={closeAssignModal} className="p-1.5 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
             <div className="p-5 space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Topic (Subject) *</label>
+
+              {/* Link to existing topic OR auto-create — hidden in edit mode */}
+              {!editingAssignment && <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Link to existing topic (optional)</label>
                 <select value={assignForm.course_id} onChange={e => setAssignForm(f => ({ ...f, course_id: e.target.value }))}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
-                  <option value="">Select topic…</option>
-                  {topics.map(c => <option key={c.id} value={c.id}>{c.subject} — {c.title}</option>)}
+                  <option value="">— Create without topic / auto-create below —</option>
+                  {topics.map(c => <option key={c.id} value={c.id}>{c.subject} — {c.title}{c.classes?.name ? ` (${c.classes.name})` : ''}</option>)}
                 </select>
-              </div>
+              </div>}
+
+              {/* Quick-create fields shown only when no topic selected and not editing */}
+              {!editingAssignment && !assignForm.course_id && (
+                <div className="bg-pink-50 border border-pink-100 rounded-xl p-3 space-y-2">
+                  <p className="text-xs font-semibold text-pink-700">Quick setup — subject & class for this assignment</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Subject *</label>
+                      <select value={assignForm.quickSubject} onChange={e => setAssignForm(f => ({ ...f, quickSubject: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white">
+                        <option value="">Select…</option>
+                        {subjectOptions.map(s => <option key={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Class *</label>
+                      <select value={assignForm.quickClassId} onChange={e => setAssignForm(f => ({ ...f, quickClassId: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white">
+                        <option value="">Select…</option>
+                        {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Term</label>
+                      <select value={assignForm.quickTerm} onChange={e => setAssignForm(f => ({ ...f, quickTerm: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white">
+                        {TERMS.map(t => <option key={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Session</label>
+                      <select value={assignForm.quickYear} onChange={e => setAssignForm(f => ({ ...f, quickYear: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 bg-white">
+                        {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Assignment Title *</label>
                 <input value={assignForm.title} onChange={e => setAssignForm(f => ({ ...f, title: e.target.value }))}
@@ -685,9 +807,10 @@ export default function LMSSection({ profile }: Props) {
               </div>
             </div>
             <div className="flex gap-3 p-5 border-t border-gray-100">
-              <button onClick={() => setShowAssignModal(false)} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button onClick={addAssignment} disabled={saving} className="flex-1 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700 disabled:opacity-50">
-                {saving ? 'Saving…' : 'Create'}
+              <button onClick={closeAssignModal} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+              <button onClick={addAssignment} disabled={saving} className="flex-1 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700 disabled:opacity-50 flex items-center justify-center gap-2">
+                {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : editingAssignment ? <Edit2 className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                {saving ? (editingAssignment ? 'Updating…' : 'Creating…') : editingAssignment ? 'Update Assignment' : 'Create Assignment'}
               </button>
             </div>
           </div>

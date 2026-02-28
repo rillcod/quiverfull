@@ -4,7 +4,7 @@ import {
   Trash2, AlertTriangle, BarChart3, GraduationCap, Printer,
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { TERMS, getDefaultAcademicYear } from '../../../lib/academicConfig';
+import { TERMS, getDefaultAcademicYear, getAcademicYearOptions } from '../../../lib/academicConfig';
 import { useSchoolSettings } from '../../../hooks/useSchoolSettings';
 import ResultCard, { getNigerianGrade, printResultCard, CardPrintContent } from './ResultCard';
 import type { ResultCardData, SubjectResult } from './ResultCard';
@@ -536,8 +536,10 @@ export default function ResultsSection({ profile }: Props) {
           </div>
           <div className="flex-1 min-w-28">
             <label className="block text-xs text-gray-500 mb-1">Academic Year</label>
-            <input value={academicYear} onChange={e => setAcademicYear(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500" />
+            <select value={academicYear} onChange={e => setAcademicYear(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+              {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+            </select>
           </div>
         </div>
       </div>

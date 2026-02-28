@@ -46,11 +46,22 @@ export default function AssignmentsSection({ profile }: Props) {
   const fetchAssignments = async (studentId: string, classId: string) => {
     setLoading(true);
     try {
-      const { data: courses } = await supabase
-        .from('courses')
-        .select('id')
-        .eq('class_id', classId)
-        .eq('is_active', true);
+      // Get the teacher for this class so we can also include their non-class-specific topics
+      const { data: classData } = await supabase
+        .from('classes')
+        .select('teacher_id')
+        .eq('id', classId)
+        .maybeSingle();
+      const teacherId = classData?.teacher_id ?? null;
+
+      // Fetch courses for this class OR teacher's generic (null class_id) courses
+      let coursesQuery = supabase.from('courses').select('id').eq('is_active', true);
+      if (teacherId) {
+        coursesQuery = coursesQuery.or(`class_id.eq.${classId},and(class_id.is.null,teacher_id.eq.${teacherId})`);
+      } else {
+        coursesQuery = coursesQuery.eq('class_id', classId);
+      }
+      const { data: courses } = await coursesQuery;
 
       const courseIds = (courses || []).map((c: { id: string }) => c.id);
 

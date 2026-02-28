@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { BarChart3, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { TERMS, getDefaultAcademicYear } from '../../../lib/academicConfig';
+import { TERMS, getDefaultAcademicYear, getAcademicYearOptions } from '../../../lib/academicConfig';
 import type { ProfileRow } from '../../../lib/supabase';
 import ResultCard, { getNigerianGrade, printResultCard } from '../admin/ResultCard';
 import type { ResultCardData, SubjectResult } from '../admin/ResultCard';
@@ -99,7 +99,7 @@ export default function ParentGradesSection({ profile }: Props) {
   const [grades, setGrades] = useState<Grade[]>([]);
   const [cbtResults, setCbtResults] = useState<CbtResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filterTerm, setFilterTerm] = useState(TERMS[0]);
+  const [filterTerm, setFilterTerm] = useState('');
   const [filterYear, setFilterYear] = useState(getDefaultAcademicYear());
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [tab, setTab] = useState<'grades' | 'result'>('grades');
@@ -140,10 +140,12 @@ export default function ParentGradesSection({ profile }: Props) {
   };
 
   const fetchResultCard = async (childId: string) => {
+    // Result card requires a specific term; fall back to First Term if "All Terms" is selected
+    const effectiveTerm = filterTerm || TERMS[0];
     setLoadingResult(true);
     const [{ data: sheet }, { data: gradeRows }] = await Promise.all([
-      supabase.from('result_sheets').select('*').eq('student_id', childId).eq('term', filterTerm).eq('academic_year', filterYear).eq('is_published', true).maybeSingle(),
-      supabase.from('grades').select('*').eq('student_id', childId).eq('term', filterTerm).eq('academic_year', filterYear),
+      supabase.from('result_sheets').select('*').eq('student_id', childId).eq('term', effectiveTerm).eq('academic_year', filterYear).eq('is_published', true).maybeSingle(),
+      supabase.from('grades').select('*').eq('student_id', childId).eq('term', effectiveTerm).eq('academic_year', filterYear),
     ]);
     setResultSheet(sheet as ResultSheetRow | null);
     setResultSubjects(computeSubjects((gradeRows || []) as Grade[]));
@@ -246,10 +248,13 @@ export default function ParentGradesSection({ profile }: Props) {
           <div className="flex flex-wrap gap-3">
             <select value={filterTerm} onChange={e => setFilterTerm(e.target.value)}
               className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+              <option value="">All Terms</option>
               {TERMS.map(t => <option key={t}>{t}</option>)}
             </select>
-            <input value={filterYear} onChange={e => setFilterYear(e.target.value)}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-28" />
+            <select value={filterYear} onChange={e => setFilterYear(e.target.value)}
+              className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+              {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+            </select>
           </div>
 
           {/* ─── Grades Tab ─── */}
@@ -262,13 +267,13 @@ export default function ParentGradesSection({ profile }: Props) {
                 {subjectsForChart.length > 0 && (
                   <PerformanceChart
                     subjects={subjectsForChart}
-                    title={`${childName(activeChild!)} — ${filterTerm} · ${filterYear} Performance`}
+                    title={`${childName(activeChild!)} — ${filterTerm || 'All Terms'} · ${filterYear} Performance`}
                   />
                 )}
 
                 {/* Grades by subject */}
                 {Object.keys(bySubject).length === 0 ? (
-                  <div className="text-center py-10 text-gray-400">No grade records for this period.</div>
+                  <div className="text-center py-10 text-gray-400">No grade records for {filterTerm || 'this session'} · {filterYear}</div>
                 ) : (
                   <div className="space-y-3">
                     <h3 className="font-semibold text-gray-700 text-sm">Grades by Subject</h3>
@@ -364,7 +369,7 @@ export default function ParentGradesSection({ profile }: Props) {
             ) : !resultSheet ? (
               <div className="text-center py-16 text-gray-400">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-medium">No published result card for {filterTerm} · {filterYear}</p>
+                <p className="font-medium">No published result card for {filterTerm || TERMS[0]} · {filterYear}</p>
                 <p className="text-xs mt-1">The result will appear here once the school publishes it.</p>
               </div>
             ) : cardData ? (

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BarChart3, Search, Download, Plus, X, Edit2, Trash2, Layers, BookOpen } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { TERMS, getDefaultAcademicYear } from '../../../lib/academicConfig';
+import { TERMS, getDefaultAcademicYear, getAcademicYearOptions } from '../../../lib/academicConfig';
 import type { ProfileRow, GradeRow, GradeInsert, ClassRow } from '../../../lib/supabase';
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
@@ -295,8 +295,10 @@ function RecordsTab({
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Academic Year</label>
-                  <input value={form.academic_year} onChange={e => setForm(f => ({ ...f, academic_year: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+                  <select value={form.academic_year} onChange={e => setForm(f => ({ ...f, academic_year: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+                    {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
@@ -421,8 +423,10 @@ function BulkEntryTab({ profile, classes, onRefresh, onToast }: {
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Academic Year</label>
-          <input value={academicYear} onChange={e => setAcademicYear(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+          <select value={academicYear} onChange={e => setAcademicYear(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+            {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+          </select>
         </div>
       </div>
 
@@ -596,8 +600,10 @@ function ClassSummaryTab({ classes }: { classes: Pick<ClassRow, 'id' | 'name'>[]
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">Academic Year</label>
-          <input value={academicYear} onChange={e => setAcademicYear(e.target.value)}
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
+          <select value={academicYear} onChange={e => setAcademicYear(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+            {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+          </select>
         </div>
       </div>
 

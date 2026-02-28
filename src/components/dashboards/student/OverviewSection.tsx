@@ -1,4 +1,4 @@
-import { BookOpen, Star, Target, Trophy, Heart, AlertCircle, ClipboardCheck, FileText, DollarSign, ArrowRight } from 'lucide-react';
+import { BookOpen, Star, Target, Trophy, Heart, AlertCircle, ClipboardCheck, FileText, ArrowRight } from 'lucide-react';
 import { useStudentData } from './useStudentData';
 import type { ProfileRow } from '../../../lib/supabase';
 
@@ -76,7 +76,7 @@ export default function OverviewSection({ profile, onNavigate }: Props) {
               { label: 'My Grades', icon: Target, color: 'bg-purple-50 border-purple-200 hover:bg-purple-100 text-purple-700', section: 'grades' },
               { label: 'Assignments', icon: FileText, color: 'bg-pink-50 border-pink-200 hover:bg-pink-100 text-pink-700', section: 'assignments' },
               { label: 'Attendance', icon: ClipboardCheck, color: 'bg-green-50 border-green-200 hover:bg-green-100 text-green-700', section: 'attendance' },
-              { label: 'My Fees', icon: DollarSign, color: 'bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-700', section: 'fees' },
+              { label: 'Timetable', icon: BookOpen, color: 'bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-700', section: 'timetable' },
             ].map(({ label, icon: Icon, color, section }) => (
               <button
                 key={label}

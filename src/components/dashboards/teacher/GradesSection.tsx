@@ -103,11 +103,11 @@ function GradeSheet({ profile }: { profile: ProfileRow }) {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  // Load class list once
+  // Load only teacher's own classes
   useEffect(() => {
-    supabase.from('classes').select('id,name').order('name')
+    supabase.from('classes').select('id,name').eq('teacher_id', profile.id).order('name')
       .then(({ data }) => setClasses((data || []) as Pick<ClassRow, 'id' | 'name'>[]));
-  }, []);
+  }, [profile.id]);
 
   const loadSheet = useCallback(async () => {
     if (!classId) return;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, Plus, X, Edit2, Trash2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { ProfileRow, AnnouncementRow, AnnouncementInsert, AnnouncementPriority } from '../../../lib/supabase';
@@ -6,7 +6,10 @@ import type { ProfileRow, AnnouncementRow, AnnouncementInsert, AnnouncementPrior
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
-  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, []);
+  useEffect(() => {
+    const t = setTimeout(onClose, 3500);
+    return () => clearTimeout(t);
+  }, [onClose]);
   return (
     <div className={`fixed bottom-6 right-6 z-[100] px-5 py-3 rounded-xl shadow-xl text-white text-sm font-medium flex items-center gap-2 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
       {msg} <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><X className="w-4 h-4" /></button>
@@ -22,6 +25,11 @@ const PRIORITY_COLORS: Record<AnnouncementPriority, string> = {
 };
 
 const emptyForm = { title: '', content: '', priority: 'normal' as AnnouncementPriority, expires_at: '' };
+const safeDateLabel = (
+  value: string | null | undefined,
+  locale?: string,
+  options?: Intl.DateTimeFormatOptions,
+) => (value ? new Date(value).toLocaleDateString(locale, options) : '—');
 
 export default function AnnouncementsSection({ profile }: Props) {
   const [items, setItems] = useState<AnnouncementRow[]>([]);
@@ -34,14 +42,14 @@ export default function AnnouncementsSection({ profile }: Props) {
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
     setItems((data || []) as AnnouncementRow[]);
     setLoading(false);
-  };
+  }, []);
 
-  useEffect(() => { fetchItems(); }, []);
+  useEffect(() => { fetchItems(); }, [fetchItems]);
 
   const openAdd = () => {
     setEditTarget(null);
@@ -54,7 +62,7 @@ export default function AnnouncementsSection({ profile }: Props) {
     setForm({
       title: a.title,
       content: a.content,
-      priority: a.priority,
+      priority: a.priority ?? 'normal',
       expires_at: a.expires_at ? a.expires_at.split('T')[0] : '',
     });
     setShowModal(true);
@@ -122,12 +130,14 @@ export default function AnnouncementsSection({ profile }: Props) {
         ) : items.length === 0 ? (
           <div className="text-center py-16 text-gray-400"><Bell className="w-12 h-12 mx-auto mb-3 opacity-40" /><p>No announcements yet</p></div>
         ) : (
-          items.map(a => (
+          items.map(a => {
+            const priority = a.priority ?? 'normal';
+            return (
             <div key={a.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
               <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-800 truncate">{a.title}</h3>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize flex-shrink-0 ${PRIORITY_COLORS[a.priority]}`}>{a.priority}</span>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize flex-shrink-0 ${PRIORITY_COLORS[priority]}`}>{priority}</span>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button onClick={() => openEdit(a)} className="p-1.5 hover:bg-yellow-50 rounded-lg text-yellow-500" title="Edit"><Edit2 className="w-4 h-4" /></button>
@@ -136,11 +146,12 @@ export default function AnnouncementsSection({ profile }: Props) {
               </div>
               <p className="text-sm text-gray-600 whitespace-pre-wrap">{a.content}</p>
               <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-gray-400">{new Date(a.created_at).toLocaleDateString('en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-                {a.expires_at && <p className="text-xs text-gray-400">Expires: {new Date(a.expires_at).toLocaleDateString()}</p>}
+                <p className="text-xs text-gray-400">{safeDateLabel(a.created_at, 'en-NG', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                {a.expires_at && <p className="text-xs text-gray-400">Expires: {safeDateLabel(a.expires_at)}</p>}
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 

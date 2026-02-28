@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { useStudentData } from './useStudentData';
-import { TERMS, getDefaultAcademicYear } from '../../../lib/academicConfig';
+import { TERMS, getDefaultAcademicYear, getAcademicYearOptions } from '../../../lib/academicConfig';
 import type { ProfileRow } from '../../../lib/supabase';
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
@@ -20,7 +20,7 @@ function getNigerianGrade(pct: number): { label: string; color: string } {
 
 export default function GradesSection({ profile }: Props) {
   const { grades, loading, error, student } = useStudentData(profile.id);
-  const [filterTerm, setFilterTerm] = useState<string>(TERMS[0]);
+  const [filterTerm, setFilterTerm] = useState<string>('');
   const [filterYear, setFilterYear] = useState(getDefaultAcademicYear());
 
   if (loading) return <div className="flex justify-center items-center h-40"><div className="w-8 h-8 border-4 border-pink-300 border-t-pink-600 rounded-full animate-spin" /></div>;
@@ -37,7 +37,9 @@ export default function GradesSection({ profile }: Props) {
     </div>
   );
 
-  const filtered = grades.filter(g => g.term === filterTerm && g.academic_year === filterYear);
+  const filtered = grades.filter(g =>
+    (!filterTerm || g.term === filterTerm) && g.academic_year === filterYear
+  );
   const avg = filtered.length
     ? Math.round(filtered.reduce((s, g) => s + (g.score / g.max_score) * 100, 0) / filtered.length)
     : 0;
@@ -49,10 +51,13 @@ export default function GradesSection({ profile }: Props) {
         <div className="flex gap-2">
           <select value={filterTerm} onChange={e => setFilterTerm(e.target.value)}
             className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+            <option value="">All Terms</option>
             {TERMS.map(t => <option key={t}>{t}</option>)}
           </select>
-          <input value={filterYear} onChange={e => setFilterYear(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 w-28" />
+          <select value={filterYear} onChange={e => setFilterYear(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+            {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+          </select>
         </div>
       </div>
       {filtered.length > 0 && (
@@ -86,10 +91,10 @@ export default function GradesSection({ profile }: Props) {
           </table>
           {filtered.length === 0 && (
             <div className="text-center py-10 text-gray-400">
-              <p>No grades recorded for <span className="font-medium">{filterTerm} · {filterYear}</span></p>
+              <p>No grades recorded{filterTerm ? ` for ${filterTerm}` : ''} · {filterYear}</p>
               {grades.length > 0 && (
                 <p className="text-xs mt-2 text-blue-500">
-                  You have {grades.length} grade{grades.length !== 1 ? 's' : ''} in other terms — change the filters above to view them.
+                  You have {grades.length} grade{grades.length !== 1 ? 's' : ''} — try changing the filters above.
                 </p>
               )}
             </div>

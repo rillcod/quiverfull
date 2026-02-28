@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { TERMS, getDefaultAcademicYear } from '../../../lib/academicConfig';
+import { TERMS, getDefaultAcademicYear, getAcademicYearOptions } from '../../../lib/academicConfig';
 import type { ProfileRow, TimetableRow } from '../../../lib/supabase';
 
 interface Props { profile: ProfileRow; }
@@ -63,8 +63,10 @@ export default function TeacherTimetableSection({ profile }: Props) {
           className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
           {TERMS.map(t => <option key={t}>{t}</option>)}
         </select>
-        <input value={filterYear} onChange={e => setFilterYear(e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-28" />
+        <select value={filterYear} onChange={e => setFilterYear(e.target.value)}
+          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+          {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+        </select>
       </div>
 
       {todaySlots.length > 0 && (

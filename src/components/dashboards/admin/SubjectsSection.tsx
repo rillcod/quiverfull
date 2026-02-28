@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, X, Search, BookMarked } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
-import { TERMS, getDefaultAcademicYear } from '../../../lib/academicConfig';
+import { TERMS, getDefaultAcademicYear, getAcademicYearOptions } from '../../../lib/academicConfig';
 import type { ProfileRow, SubjectRow, SubjectInsert } from '../../../lib/supabase';
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
@@ -262,8 +262,10 @@ export default function SubjectsSection({ profile: _profile }: Props) {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Academic Year</label>
-                  <input value={form.academic_year} onChange={e => setForm(f => ({ ...f, academic_year: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500" />
+                  <select value={form.academic_year} onChange={e => setForm(f => ({ ...f, academic_year: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500">
+                    {getAcademicYearOptions().map(y => <option key={y}>{y}</option>)}
+                  </select>
                 </div>
               </div>
             </div>
