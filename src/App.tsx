@@ -71,31 +71,15 @@ function App() {
 
   // Render appropriate dashboard based on role
   const renderDashboard = () => {
-    const withWebsiteButton = (dashboard: React.ReactElement) => {
-      return (
-        <div className="relative">
-          {dashboard}
-          <div className="fixed bottom-6 right-6 z-50">
-            <button
-              onClick={() => setShowMainWebsite(true)}
-              className="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-full shadow-lg font-medium text-sm transition-all duration-200 transform hover:scale-105"
-            >
-              🏠 Main Website
-            </button>
-          </div>
-        </div>
-      );
-    };
-
     switch (profile.role) {
       case 'parent':
-        return withWebsiteButton(<ParentDashboard profile={profile} />);
+        return <ParentDashboard profile={profile} />;
       case 'teacher':
-        return withWebsiteButton(<TeacherDashboard profile={profile} />);
+        return <TeacherDashboard profile={profile} />;
       case 'admin':
-        return withWebsiteButton(<AdminDashboard profile={profile} />);
+        return <AdminDashboard profile={profile} />;
       case 'student':
-        return withWebsiteButton(<StudentDashboard profile={profile} />);
+        return <StudentDashboard profile={profile} />;
       default:
         return (
           <div className="min-h-screen bg-gray-100 flex items-center justify-center">
