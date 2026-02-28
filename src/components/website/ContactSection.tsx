@@ -123,14 +123,25 @@ export default function ContactSection() {
               </div>
             </div>
 
-            {/* Map Placeholder */}
-            <div className="bg-gray-100 rounded-2xl h-64 flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">Interactive Map</p>
-                <p className="text-sm text-gray-400">2, Akpofa Avenue, G.R.A, Benin City</p>
-              </div>
+            {/* Interactive Map */}
+            <div className="rounded-2xl h-64 overflow-hidden border border-gray-200 shadow-sm">
+              <iframe
+                title="The Quiverfull School Location"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=5.5929%2C6.3119%2C5.6529%2C6.3519&layer=mapnik&marker=6.3319%2C5.6229"
+                className="w-full h-full border-0"
+                loading="lazy"
+                allowFullScreen
+              />
             </div>
+            <a
+              href="https://www.openstreetmap.org/?mlat=6.3319&mlon=5.6229#map=15/6.3319/5.6229"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-orange-500 hover:underline mt-2"
+            >
+              <MapPin className="w-4 h-4" />
+              View larger map
+            </a>
           </div>
 
           {/* Contact Form */}
