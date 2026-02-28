@@ -8,69 +8,36 @@ export default function NewsEventsPage() {
   const upcomingEvents = [
     {
       id: 1,
-      title: 'Spring Festival Celebration',
-      date: '2025-03-15',
-      time: '10:00 AM - 2:00 PM',
-      location: 'School Playground',
-      description: 'Join us for a colorful celebration of spring with games, food, and performances!',
-      image: '🌸',
-      category: 'Festival',
-      color: 'from-pink-400 to-rose-400'
+      title: 'Graduation Day',
+      date: '2026-06-20',
+      time: '10:00 AM - 1:00 PM',
+      location: 'Main Hall',
+      description: 'A proud celebration of our graduating pupils as they complete this chapter and step into the next adventure of their lives!',
+      image: '🎓',
+      category: 'Milestone',
+      color: 'from-indigo-400 to-purple-400'
     },
     {
       id: 2,
-      title: 'Science Fair Extravaganza',
-      date: '2025-03-22',
-      time: '9:00 AM - 12:00 PM',
-      location: 'Main Hall',
-      description: 'Students showcase their amazing science projects and experiments!',
-      image: '🔬',
-      category: 'Academic',
+      title: 'Book Fair',
+      date: '2026-11-08',
+      time: '9:00 AM - 3:00 PM',
+      location: 'School Library & Hall',
+      description: 'Browse hundreds of amazing books — Nigerian authors, picture books, storybooks, and more. A wonderful day to ignite a love for reading!',
+      image: '📚',
+      category: 'Learning',
       color: 'from-blue-400 to-cyan-400'
     },
     {
       id: 3,
-      title: 'Art Gallery Opening',
-      date: '2025-04-05',
-      time: '3:00 PM - 5:00 PM',
-      location: 'Art Studio',
-      description: 'Admire the beautiful artwork created by our talented young artists!',
-      image: '🎨',
-      category: 'Arts',
-      color: 'from-purple-400 to-indigo-400'
-    },
-    {
-      id: 4,
-      title: 'Family Fun Day',
-      date: '2025-04-12',
-      time: '11:00 AM - 4:00 PM',
-      location: 'Entire Campus',
-      description: 'A day of fun activities, games, and bonding for the whole family!',
-      image: '👨‍👩‍👧‍👦',
-      category: 'Family',
+      title: 'Cultural Day',
+      date: '2026-10-03',
+      time: '10:00 AM - 2:00 PM',
+      location: 'School Grounds',
+      description: 'A vibrant celebration of Nigeria\'s rich cultures and traditions! Children come dressed in traditional attire, showcase dances, songs, and delicious foods from across the country.',
+      image: '🇳🇬',
+      category: 'Culture',
       color: 'from-green-400 to-emerald-400'
-    },
-    {
-      id: 5,
-      title: 'Music Concert',
-      date: '2025-04-20',
-      time: '6:00 PM - 8:00 PM',
-      location: 'School Auditorium',
-      description: 'Our young musicians perform beautiful songs and showcase their talents!',
-      image: '🎵',
-      category: 'Performance',
-      color: 'from-yellow-400 to-orange-400'
-    },
-    {
-      id: 6,
-      title: 'Graduation Ceremony',
-      date: '2025-06-15',
-      time: '10:00 AM - 12:00 PM',
-      location: 'Main Hall',
-      description: 'Celebrating our graduating students as they move to their next adventure!',
-      image: '🎓',
-      category: 'Milestone',
-      color: 'from-indigo-400 to-purple-400'
     }
   ];
 
@@ -112,10 +79,14 @@ export default function NewsEventsPage() {
   const schoolCalendar = [
     { month: 'January', events: ['New Term Begins', 'Parent Orientation'] },
     { month: 'February', events: ['Valentine\'s Day Celebration', 'Mid-term Break'] },
-    { month: 'March', events: ['Spring Festival', 'Science Fair', 'Parent-Teacher Conferences'] },
-    { month: 'April', events: ['Art Gallery Opening', 'Family Fun Day', 'Music Concert'] },
-    { month: 'May', events: ['Sports Day', 'Cultural Week', 'Field Trips'] },
-    { month: 'June', events: ['Graduation Ceremony', 'End of Term', 'Summer Camp Begins'] }
+    { month: 'March', events: ['Parent-Teacher Conferences', 'Sports Day'] },
+    { month: 'April', events: ['End of First Term', 'Easter Break'] },
+    { month: 'May', events: ['Second Term Begins', 'Field Trips'] },
+    { month: 'June', events: ['Graduation Day', 'End of Term'] },
+    { month: 'September', events: ['New Academic Year Begins', 'Parent Orientation'] },
+    { month: 'October', events: ['Cultural Day', 'Mid-term Break'] },
+    { month: 'November', events: ['Book Fair', 'Parent-Teacher Conferences'] },
+    { month: 'December', events: ['End of Year Concert', 'Christmas Break'] }
   ];
 
   return (

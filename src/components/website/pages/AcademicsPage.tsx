@@ -38,7 +38,7 @@ export default function AcademicsPage() {
       emoji: '🔢',
       description: 'Numbers, patterns, and problem-solving fun!',
       activities: [
-        { name: 'Golden Bead Work', description: 'Learning numbers with beautiful golden beads!', icon: '🟡' },
+        { name: 'Hands-On Number Work', description: 'Learning numbers through concrete materials!', icon: '🟡' },
         { name: 'Geometry Puzzles', description: 'Exploring shapes and patterns!', icon: '🔺' },
         { name: 'Math Games', description: 'Playing games that make math fun!', icon: '🎲' },
         { name: 'Real-World Problems', description: 'Using math in everyday situations!', icon: '🏪' },

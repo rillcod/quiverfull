@@ -11,7 +11,7 @@ export default function Footer() {
 
   const programs = [
     { name: 'Toddler Program', to: '/programs' },
-    { name: 'Primary Program', to: '/programs' },
+    { name: 'Early Explorers Program', to: '/programs' },
     { name: 'Elementary Program', to: '/programs' },
     { name: 'After School Care', to: '/programs' }
   ];

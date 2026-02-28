@@ -112,18 +112,19 @@ export default function AboutPage() {
               </h2>
               <div className="space-y-6 text-lg text-gray-700 leading-relaxed">
                 <p>
-                  Once upon a time in 2020, a group of passionate educators had a big dream - 
-                  to create the most amazing school in Nigeria where every child could shine 
+                  In 2021, a group of passionate educators had a big dream — to create
+                  the most amazing school in Nigeria where every child could shine
                   like the bright star they are! 🌟
                 </p>
                 <p>
-                  We chose a child-centered approach to learning because it lets children 
-                  be the heroes of their own learning adventure. Just like how every child 
-                  is different and special, our school celebrates what makes each student unique!
+                  We believe in a learner-centered, teacher-guided approach where children
+                  are active participants in their own education. Teachers guide, support, and
+                  inspire — while every child explores at their own pace and discovers what
+                  makes them truly unique!
                 </p>
                 <p>
-                  Today, we're proud to be home to over 200 happy children who come to school 
-                  excited to learn, play, and grow together. Our school family includes amazing 
+                  Today, we're proud to be home to over 100 happy children who come to school
+                  excited to learn, play, and grow together. Our school family includes amazing
                   teachers, supportive parents, and the most wonderful students in Benin City!
                 </p>
               </div>
@@ -134,14 +135,14 @@ export default function AboutPage() {
                 <div className="bg-white rounded-2xl p-6 shadow-lg text-center">
                   <div className="text-6xl mb-4">🎓</div>
                   <h3 className="text-2xl font-bold text-gray-800 mb-4">
-                    "Help me to do it myself"
+                    "Learner-centered, Teacher-guided"
                   </h3>
                   <p className="text-gray-600 italic text-lg">
-                    
+                    Every child is a capable learner.
                   </p>
                   <p className="text-sm text-gray-500 mt-4">
-                    This is our special motto that means we help children 
-                    become independent and confident!
+                    Our approach puts children at the heart of learning
+                    with teachers who guide, inspire, and nurture every step of the way!
                   </p>
                 </div>
               </div>
@@ -245,13 +246,13 @@ export default function AboutPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6">
                 <div className="text-4xl mb-2">🎂</div>
-                <div className="text-3xl font-bold mb-2">5+</div>
+                <div className="text-3xl font-bold mb-2">4+</div>
                 <div className="text-lg">Years of Fun Learning</div>
               </div>
-              
+
               <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6">
                 <div className="text-4xl mb-2">👨‍👩‍👧‍👦</div>
-                <div className="text-3xl font-bold mb-2">200+</div>
+                <div className="text-3xl font-bold mb-2">100+</div>
                 <div className="text-lg">Happy Students</div>
               </div>
               

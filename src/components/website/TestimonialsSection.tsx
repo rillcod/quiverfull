@@ -12,21 +12,21 @@ export default function TestimonialsSection() {
     {
       name: 'Mr. & Mrs. Okafor',
       role: 'Parents of Chidi (Age 7)',
-      content: 'We love how the teachers respect each child\'s individual pace. Chidi has developed a genuine love for learning that we never expected at his age.',
+      content: 'We love how the teachers guide each child at their own pace. Chidi has developed a genuine love for learning that we never expected at his age.',
       rating: 5,
       image: '👨🏾‍👩🏾‍👦🏾'
     },
     {
       name: 'Dr. Fatima Ibrahim',
       role: 'Parent of Amina (Age 4)',
-      content: 'The mixed-age classrooms have helped Amina develop leadership skills and empathy. She comes home excited to share what she learned every day.',
+      content: 'The learner-centered approach has helped Amina develop leadership skills and empathy. She comes home excited to share what she learned every day.',
       rating: 5,
       image: '👩🏾‍⚕️'
     },
     {
       name: 'Mrs. Johnson',
       role: 'Parent of Tolu (Age 6)',
-      content: 'The prepared environment and hands-on materials make learning so engaging. Tolu has developed strong problem-solving skills and creativity.',
+      content: 'The hands-on, teacher-guided learning environment is so engaging. Tolu has developed strong problem-solving skills and creativity.',
       rating: 5,
       image: '👩🏾‍🏫'
     },
@@ -113,11 +113,11 @@ export default function TestimonialsSection() {
                 <div className="text-gray-600">Parent Satisfaction</div>
               </div>
               <div>
-                <div className="text-4xl font-bold text-green-500 mb-2">5+</div>
+                <div className="text-4xl font-bold text-green-500 mb-2">4+</div>
                 <div className="text-gray-600">Years of Excellence</div>
               </div>
               <div>
-                <div className="text-4xl font-bold text-blue-500 mb-2">200+</div>
+                <div className="text-4xl font-bold text-blue-500 mb-2">100+</div>
                 <div className="text-gray-600">Happy Families</div>
               </div>
               <div>

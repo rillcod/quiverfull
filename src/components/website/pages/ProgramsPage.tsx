@@ -10,7 +10,7 @@ export default function ProgramsPage() {
     {
       id: 'toddler',
       title: 'Toddler Adventures',
-      subtitle: 'Ages 18 months - 3 years',
+      subtitle: 'Ages 12–24 months',
       icon: Baby,
       color: 'from-pink-400 to-pink-600',
       bgColor: 'bg-pink-50',
@@ -41,17 +41,17 @@ export default function ProgramsPage() {
       ]
     },
     {
-      id: 'primary',
-      title: 'Primary Explorers',
-      subtitle: 'Ages 3 - 6 years (Creche - Basic 2)',
+      id: 'early-explorers',
+      title: 'Early Explorers',
+      subtitle: 'Ages 2–5 years',
       icon: Users,
       color: 'from-blue-400 to-blue-600',
       bgColor: 'bg-blue-50',
       emoji: '🎨',
-      description: 'Where curiosity meets discovery in our prepared learning environments!',
+      description: 'Where curiosity meets discovery through play, guided exploration, and teacher support!',
       dailySchedule: [
         { time: '8:00 AM', activity: 'Morning Circle & Planning', icon: '🌅' },
-        { time: '8:30 AM', activity: 'Work Cycle - Individual Choice', icon: '📚' },
+        { time: '8:30 AM', activity: 'Guided Learning Activities', icon: '📚' },
         { time: '10:00 AM', activity: 'Snack & Community Time', icon: '🍎' },
         { time: '10:30 AM', activity: 'Outdoor Exploration', icon: '🌳' },
         { time: '11:30 AM', activity: 'Group Lessons & Projects', icon: '👥' },
@@ -60,12 +60,12 @@ export default function ProgramsPage() {
         { time: '2:00 PM', activity: 'Closing Circle & Reflection', icon: '🌟' }
       ],
       activities: [
-        { name: 'Practical Life', description: 'Real work that builds confidence and skills!', icon: '🧹' },
-        { name: 'Sensorial Materials', description: 'Exploring the world through our senses!', icon: '👋' },
-        { name: 'Mathematics', description: 'Numbers come alive with golden beads!', icon: '🔢' },
+        { name: 'Practical Life Skills', description: 'Real tasks that build confidence and independence!', icon: '🧹' },
+        { name: 'Sensory Exploration', description: 'Exploring the world through all our senses!', icon: '👋' },
+        { name: 'Early Mathematics', description: 'Numbers come alive through hands-on discovery!', icon: '🔢' },
         { name: 'Language Arts', description: 'Reading, writing, and storytelling adventures!', icon: '📖' },
-        { name: 'Cultural Studies', description: 'Discovering our world and universe!', icon: '🌍' },
-        { name: 'Peace Education', description: 'Learning to solve problems together!', icon: '☮️' }
+        { name: 'Cultural Studies', description: 'Discovering our world and celebrating Nigeria!', icon: '🌍' },
+        { name: 'Social Skills', description: 'Learning to collaborate and solve problems together!', icon: '☮️' }
       ],
       learningGoals: [
         'Reading and writing fluency',
@@ -78,7 +78,7 @@ export default function ProgramsPage() {
     {
       id: 'elementary',
       title: 'Elementary Scholars',
-      subtitle: 'Ages 6 - 12 years (Basic 3 - Basic 6)',
+      subtitle: 'Ages 6 and up',
       icon: GraduationCap,
       color: 'from-green-400 to-green-600',
       bgColor: 'bg-green-50',
@@ -95,7 +95,7 @@ export default function ProgramsPage() {
         { time: '3:00 PM', activity: 'Reflection & Planning', icon: '📝' }
       ],
       activities: [
-        { name: 'Great Lessons', description: 'Epic stories about the universe and life!', icon: '🌌' },
+        { name: 'Story-Based Learning', description: 'Epic stories about the universe and life!', icon: '🌌' },
         { name: 'Research Projects', description: 'Becoming experts on topics you love!', icon: '🔬' },
         { name: 'Mathematical Explorations', description: 'Advanced math through hands-on discovery!', icon: '📐' },
         { name: 'Literature Circles', description: 'Reading and discussing amazing books!', icon: '📚' },

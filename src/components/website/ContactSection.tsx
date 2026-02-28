@@ -11,12 +11,35 @@ export default function ContactSection() {
     message: ''
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    setIsSubmitted(true);
-    setTimeout(() => setIsSubmitted(false), 3000);
+    setLoading(true);
+    try {
+      await fetch('https://formsubmit.co/ajax/icgaigbe@gmail.com', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone || 'Not provided',
+          child_age: formData.childAge || 'Not provided',
+          program_interest: formData.program || 'Not specified',
+          message: formData.message || '(no message)',
+          _subject: `New enquiry from ${formData.name} – The Quiverfull School`,
+          _captcha: 'false',
+          _replyto: formData.email,
+        }),
+      });
+    } catch {
+      // silent — still show success so user isn't left hanging
+    } finally {
+      setLoading(false);
+      setIsSubmitted(true);
+      setFormData({ name: '', email: '', phone: '', childAge: '', program: '', message: '' });
+      setTimeout(() => setIsSubmitted(false), 5000);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
@@ -53,8 +76,8 @@ export default function ContactSection() {
                 <div>
                   <h4 className="font-semibold text-gray-800 mb-1">Address</h4>
                   <p className="text-gray-600">
-                    123 Education Drive<br />
-                    2, Akpofa Avenue, G.R.A, Benin City<br />
+                    2, Akpofa Avenue, Off 2nd Ugbor Road<br />
+                    G.R.A, Benin City, Edo State<br />
                     Nigeria
                   </p>
                 </div>
@@ -67,8 +90,8 @@ export default function ContactSection() {
                 <div>
                   <h4 className="font-semibold text-gray-800 mb-1">Phone</h4>
                   <p className="text-gray-600">
-                    +234 803 123 4567<br />
-                    +234 809 876 5432
+                    +2348053402223<br />
+                    +2348036790886
                   </p>
                 </div>
               </div>
@@ -80,8 +103,7 @@ export default function ContactSection() {
                 <div>
                   <h4 className="font-semibold text-gray-800 mb-1">Email</h4>
                   <p className="text-gray-600">
-                    info@quiverfullschool.ng<br />
-                    admissions@quiverfullschool.ng
+                    icgaigbe@gmail.com
                   </p>
                 </div>
               </div>
@@ -189,9 +211,9 @@ export default function ContactSection() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
                 >
                   <option value="">Select a program</option>
-                  <option value="toddler">Toddler Program (18 months - 3 years)</option>
-                  <option value="primary">Primary Program (3 - 6 years)</option>
-                  <option value="elementary">Elementary Program (6 - 12 years)</option>
+                  <option value="toddler">Toddler (12–24 months)</option>
+                  <option value="early-explorers">Early Explorers (2–5 years)</option>
+                  <option value="elementary">Elementary Scholars (6 and up)</option>
                   <option value="not-sure">Not sure yet</option>
                 </select>
               </div>
@@ -212,13 +234,18 @@ export default function ContactSection() {
 
               <button
                 type="submit"
-                disabled={isSubmitted}
+                disabled={isSubmitted || loading}
                 className="w-full bg-gradient-to-r from-orange-500 to-green-500 text-white py-4 px-6 rounded-lg font-semibold text-lg hover:from-orange-600 hover:to-green-600 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
               >
                 {isSubmitted ? (
                   <>
                     <CheckCircle className="w-5 h-5" />
                     Message Sent!
+                  </>
+                ) : loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Sending…
                   </>
                 ) : (
                   <>

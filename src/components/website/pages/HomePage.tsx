@@ -73,11 +73,11 @@ export default function HomePage({ onScheduleTour }: HomePageProps) {
               {/* Stats */}
               <div className="grid grid-cols-3 gap-8 mt-12 pt-8 border-t border-gray-200">
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-orange-500">5+</div>
+                  <div className="text-3xl font-bold text-orange-500">4+</div>
                   <div className="text-gray-600 text-sm">Years of Excellence</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-3xl font-bold text-green-500">200+</div>
+                  <div className="text-3xl font-bold text-green-500">100+</div>
                   <div className="text-gray-600 text-sm">Happy Students</div>
                 </div>
                 <div className="text-center">
