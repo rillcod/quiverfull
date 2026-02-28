@@ -3,20 +3,9 @@ import { AlertCircle } from 'lucide-react';
 import { useStudentData } from './useStudentData';
 import { TERMS, getDefaultAcademicYear, getAcademicYearOptions } from '../../../lib/academicConfig';
 import type { ProfileRow } from '../../../lib/supabase';
+import { nigerianGrade } from '../../../lib/grading';
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
-
-function getNigerianGrade(pct: number): { label: string; color: string } {
-  if (pct >= 75) return { label: 'A1', color: 'bg-green-100 text-green-800' };
-  if (pct >= 70) return { label: 'B2', color: 'bg-blue-100 text-blue-800' };
-  if (pct >= 65) return { label: 'B3', color: 'bg-blue-100 text-blue-700' };
-  if (pct >= 60) return { label: 'C4', color: 'bg-teal-100 text-teal-800' };
-  if (pct >= 55) return { label: 'C5', color: 'bg-yellow-100 text-yellow-800' };
-  if (pct >= 50) return { label: 'C6', color: 'bg-yellow-100 text-yellow-700' };
-  if (pct >= 45) return { label: 'D7', color: 'bg-orange-100 text-orange-800' };
-  if (pct >= 40) return { label: 'E8', color: 'bg-red-100 text-red-700' };
-  return { label: 'F9', color: 'bg-red-100 text-red-800' };
-}
 
 export default function GradesSection({ profile }: Props) {
   const { grades, loading, error, student } = useStudentData(profile.id);
@@ -41,7 +30,7 @@ export default function GradesSection({ profile }: Props) {
     (!filterTerm || g.term === filterTerm) && g.academic_year === filterYear
   );
   const avg = filtered.length
-    ? Math.round(filtered.reduce((s, g) => s + (g.score / g.max_score) * 100, 0) / filtered.length)
+    ? Math.round(filtered.reduce((s, g) => s + (g.max_score > 0 ? (g.score / g.max_score) * 100 : 0), 0) / filtered.length)
     : 0;
 
   return (
@@ -74,8 +63,8 @@ export default function GradesSection({ profile }: Props) {
             </tr></thead>
             <tbody>
               {filtered.map(g => {
-                const pct = Math.round((g.score / g.max_score) * 100);
-                const { label, color } = getNigerianGrade(pct);
+                const pct = g.max_score > 0 ? Math.round((g.score / g.max_score) * 100) : 0;
+                const { label, color } = nigerianGrade(pct, 100);
                 return (
                   <tr key={g.id} className="border-b border-gray-50 hover:bg-gray-50">
                     <td className="py-3 px-4 font-medium text-gray-800">{g.subject}</td>

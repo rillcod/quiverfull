@@ -2,24 +2,12 @@ import { useState, useEffect } from 'react';
 import { Users, GraduationCap, Calendar, TrendingUp } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { ProfileRow, StudentWithProfileAndClass, GradeRow, AttendanceRow, ClassLevel } from '../../../lib/supabase';
+import { nigerianGrade } from '../../../lib/grading';
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
 
 const LEVEL_LABELS: Record<ClassLevel, string> = { creche: 'Creche', basic1: 'Basic 1', basic2: 'Basic 2', basic3: 'Basic 3', basic4: 'Basic 4', basic5: 'Basic 5', basic6: 'Basic 6' };
 interface StudentParentLink { student_id: string }
-
-function nigerianGrade(score: number, max: number) {
-  const p = max > 0 ? (score / max) * 100 : 0;
-  if (p >= 75) return { label: 'A1', color: 'bg-green-100 text-green-700' };
-  if (p >= 70) return { label: 'B2', color: 'bg-blue-100 text-blue-700' };
-  if (p >= 65) return { label: 'B3', color: 'bg-blue-50 text-blue-600' };
-  if (p >= 60) return { label: 'C4', color: 'bg-yellow-100 text-yellow-700' };
-  if (p >= 55) return { label: 'C5', color: 'bg-yellow-50 text-yellow-600' };
-  if (p >= 50) return { label: 'C6', color: 'bg-orange-50 text-orange-600' };
-  if (p >= 45) return { label: 'D7', color: 'bg-orange-100 text-orange-700' };
-  if (p >= 40) return { label: 'E8', color: 'bg-red-50 text-red-500' };
-  return { label: 'F9', color: 'bg-red-100 text-red-700' };
-}
 
 const attColor: Record<string, string> = {
   present: 'bg-green-100 text-green-700',

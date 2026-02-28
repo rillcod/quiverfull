@@ -457,8 +457,8 @@ export default function LMSSection({ profile }: Props) {
 
       {/* ── Course Modal ── */}
       {showCourseModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowCourseModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-800 text-lg">{editCourse ? 'Edit Topic' : 'Add Topic'}</h3>
               <button onClick={() => setShowCourseModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
@@ -518,8 +518,8 @@ export default function LMSSection({ profile }: Props) {
 
       {/* ── Assignment Modal ── */}
       {showAssignModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowAssignModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-800 text-lg">{editAssignment ? 'Edit Assignment' : 'Add Assignment'}</h3>
               <button onClick={() => setShowAssignModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
@@ -567,8 +567,8 @@ export default function LMSSection({ profile }: Props) {
 
       {/* ── Material Modal ── */}
       {showMaterialModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowMaterialModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-800 text-lg">{editMaterial ? 'Edit Material' : 'Add Material'}</h3>
               <button onClick={() => setShowMaterialModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
@@ -610,8 +610,8 @@ export default function LMSSection({ profile }: Props) {
 
       {/* ── Grade Submission Modal ── */}
       {gradeTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setGradeTarget(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <div>
                 <h3 className="font-bold text-gray-800">Grade Submission</h3>
@@ -656,8 +656,8 @@ export default function LMSSection({ profile }: Props) {
 
       {/* ── Delete Confirms ── */}
       {deleteCourse && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDeleteCourse(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-gray-800 text-lg mb-2">Remove Topic</h3>
             <p className="text-sm text-gray-600 mb-5">Remove "<span className="font-semibold">{deleteCourse.title}</span>"?</p>
             <div className="flex gap-3">
@@ -668,8 +668,8 @@ export default function LMSSection({ profile }: Props) {
         </div>
       )}
       {deleteAssignment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDeleteAssignment(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-gray-800 text-lg mb-2">Delete Assignment</h3>
             <p className="text-sm text-gray-600 mb-5">Delete "<span className="font-semibold">{deleteAssignment.title}</span>"?</p>
             <div className="flex gap-3">
@@ -680,8 +680,8 @@ export default function LMSSection({ profile }: Props) {
         </div>
       )}
       {deleteMaterial && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setDeleteMaterial(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
             <h3 className="font-bold text-gray-800 text-lg mb-2">Delete Material</h3>
             <p className="text-sm text-gray-600 mb-5">Delete "<span className="font-semibold">{deleteMaterial.title}</span>"?</p>
             <div className="flex gap-3">

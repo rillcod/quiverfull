@@ -6,6 +6,7 @@ import {
 import { supabase } from '../../../lib/supabase';
 import { TERMS, getDefaultAcademicYear, getAcademicYearOptions } from '../../../lib/academicConfig';
 import type { ProfileRow, GradeRow, ClassRow } from '../../../lib/supabase';
+import { nigerianGrade } from '../../../lib/grading';
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
 
@@ -20,19 +21,6 @@ interface StudentOption { id: string; student_id: string; profiles?: { first_nam
 
 const ASSESSMENT_TYPES = ['Home Work', '1st CA', '2nd CA', 'Exam', 'Test', 'CA', 'Project', 'Assignment', 'Quiz'];
 const DEFAULT_MAX: Record<string, number> = { 'Home Work': 20, '1st CA': 20, '2nd CA': 20, 'Exam': 60, 'Test': 30 };
-
-function nigerianGrade(score: number, max: number) {
-  const p = max > 0 ? (score / max) * 100 : 0;
-  if (p >= 75) return { label: 'A1', color: 'text-green-700 bg-green-100' };
-  if (p >= 70) return { label: 'B2', color: 'text-blue-700 bg-blue-100' };
-  if (p >= 65) return { label: 'B3', color: 'text-blue-600 bg-blue-50' };
-  if (p >= 60) return { label: 'C4', color: 'text-cyan-700 bg-cyan-100' };
-  if (p >= 55) return { label: 'C5', color: 'text-amber-700 bg-amber-100' };
-  if (p >= 50) return { label: 'C6', color: 'text-amber-600 bg-amber-50' };
-  if (p >= 45) return { label: 'D7', color: 'text-orange-700 bg-orange-100' };
-  if (p >= 40) return { label: 'E8', color: 'text-red-600 bg-red-100' };
-  return { label: 'F9', color: 'text-red-800 bg-red-200' };
-}
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
   useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
@@ -637,8 +625,8 @@ function RecordsView({ profile }: { profile: ProfileRow }) {
 
       {/* Single-grade modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b">
               <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
                 <BarChart3 className="w-5 h-5 text-purple-500" /> {editing ? 'Edit Grade' : 'Add Grade'}

@@ -90,7 +90,7 @@ export default function FeesSection({ profile: _profile }: Props) {
     if (isNaN(amount) || amount <= 0) return setToast({ msg: 'Enter a valid amount', type: 'error' });
     setSaving(true);
     try {
-      const newPaid = showPayment.paid_amount + amount;
+      const newPaid = (showPayment.paid_amount ?? 0) + amount;
       const status: FeeStatus = newPaid >= showPayment.amount ? 'paid' : 'partial';
       await supabase.from('fees').update({ paid_amount: newPaid, status }).eq('id', showPayment.id);
       setToast({ msg: 'Payment recorded', type: 'success' });
@@ -298,13 +298,13 @@ export default function FeesSection({ profile: _profile }: Props) {
                       <td className="py-3 px-4 font-medium text-gray-800">{f.students?.profiles?.first_name} {f.students?.profiles?.last_name}</td>
                       <td className="py-3 px-4 text-gray-600">{f.fee_type}</td>
                       <td className="py-3 px-4 font-medium">₦{Number(f.amount).toLocaleString()}</td>
-                      <td className="py-3 px-4 text-green-600">₦{Number(f.paid_amount).toLocaleString()}</td>
-                      <td className="py-3 px-4 font-medium text-red-600">₦{(f.amount - f.paid_amount).toLocaleString()}</td>
+                      <td className="py-3 px-4 text-green-600">₦{Number(f.paid_amount ?? 0).toLocaleString()}</td>
+                      <td className="py-3 px-4 font-medium text-red-600">₦{(f.amount - (f.paid_amount ?? 0)).toLocaleString()}</td>
                       <td className="py-3 px-4 text-gray-500">{new Date(f.due_date).toLocaleDateString()}</td>
                       <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${STATUS_COLORS[f.status]}`}>{f.status}</span></td>
                       <td className="py-3 px-4">
                         {f.status !== 'paid' && (
-                          <button onClick={() => { setShowPayment(f); setPaymentAmount(String(f.amount - f.paid_amount)); }} className="text-emerald-600 hover:underline text-xs font-medium">Record payment</button>
+                          <button onClick={() => { setShowPayment(f); setPaymentAmount(String(f.amount - (f.paid_amount ?? 0))); }} className="text-emerald-600 hover:underline text-xs font-medium">Record payment</button>
                         )}
                       </td>
                     </tr>
@@ -374,14 +374,14 @@ export default function FeesSection({ profile: _profile }: Props) {
 
       {/* Record Payment Modal */}
       {showPayment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => { setShowPayment(null); setPaymentAmount(''); }}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800 text-lg">Record Payment</h3>
               <button onClick={() => { setShowPayment(null); setPaymentAmount(''); }} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <p className="text-sm text-gray-600 mb-1">{showPayment.students?.profiles?.first_name} {showPayment.students?.profiles?.last_name} · {showPayment.fee_type}</p>
-            <p className="text-xs text-gray-500 mb-4">Balance: ₦{(showPayment.amount - showPayment.paid_amount).toLocaleString()}</p>
+            <p className="text-xs text-gray-500 mb-4">Balance: ₦{(showPayment.amount - (showPayment.paid_amount ?? 0)).toLocaleString()}</p>
             <input type="number" step="0.01" min="0" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Amount (₦)" />
             <div className="flex gap-3">
@@ -394,8 +394,8 @@ export default function FeesSection({ profile: _profile }: Props) {
 
       {/* Add Fee Modal */}
       {showAddFee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowAddFee(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2"><DollarSign className="w-5 h-5 text-emerald-500" /> Add Fee Record</h3>
               <button onClick={() => setShowAddFee(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
@@ -457,8 +457,8 @@ export default function FeesSection({ profile: _profile }: Props) {
 
       {/* Template Add/Edit Modal */}
       {showTemplateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowTemplateModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
               <h3 className="font-bold text-gray-800 text-lg">{editingTemplate ? 'Edit Template' : 'Add Fee Template'}</h3>
               <button onClick={() => setShowTemplateModal(false)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
@@ -518,8 +518,8 @@ export default function FeesSection({ profile: _profile }: Props) {
 
       {/* Apply Template Modal */}
       {applyTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setApplyTarget(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-800 text-lg">Apply Template</h3>
               <button onClick={() => setApplyTarget(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>

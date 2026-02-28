@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Users, Search, Eye, X, ClipboardCheck, BarChart3,
-  Heart, GraduationCap, ChevronDown, AlertCircle
+  Heart, GraduationCap, ChevronDown, AlertCircle, UserPlus, Loader2
 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { ProfileRow } from '../../../lib/supabase';
+import { nigerianGrade } from '../../../lib/grading';
 
 interface Props { profile: ProfileRow; onNavigate?: (s: string) => void; }
 
@@ -21,19 +22,6 @@ interface StudentRow {
 interface AttendanceSummary { present: number; absent: number; late: number; excused: number; total: number; }
 interface GradeSummary { subject: string; assessment_type: string; score: number; max_score: number; }
 interface HealthRecord { id: string; visit_date: string; visit_reason: string; diagnosis: string | null; allergies: string | null; }
-
-function nigerianGrade(score: number, max: number) {
-  const p = max > 0 ? (score / max) * 100 : 0;
-  if (p >= 75) return { label: 'A1', color: 'text-green-700 bg-green-100' };
-  if (p >= 70) return { label: 'B2', color: 'text-blue-700 bg-blue-100' };
-  if (p >= 65) return { label: 'B3', color: 'text-blue-600 bg-blue-50' };
-  if (p >= 60) return { label: 'C4', color: 'text-yellow-700 bg-yellow-100' };
-  if (p >= 55) return { label: 'C5', color: 'text-yellow-600 bg-yellow-50' };
-  if (p >= 50) return { label: 'C6', color: 'text-orange-600 bg-orange-50' };
-  if (p >= 45) return { label: 'D7', color: 'text-orange-700 bg-orange-100' };
-  if (p >= 40) return { label: 'E8', color: 'text-red-500 bg-red-50' };
-  return { label: 'F9', color: 'text-red-700 bg-red-100' };
-}
 
 function calcAge(dob: string | null) {
   if (!dob) return '—';
@@ -64,6 +52,14 @@ export default function TeacherStudentsSection({ profile }: Props) {
   const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
 
+  // Add-student modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [allStudents, setAllStudents] = useState<StudentRow[]>([]);
+  const [addSearch, setAddSearch] = useState('');
+  const [addClassId, setAddClassId] = useState('');
+  const [addLoading, setAddLoading] = useState(false);
+  const [addError, setAddError] = useState('');
+
   // Load students only from the teacher's own classes
   const fetchStudents = useCallback(async () => {
     setLoading(true);
@@ -92,14 +88,15 @@ export default function TeacherStudentsSection({ profile }: Props) {
 
   useEffect(() => { fetchStudents(); }, [fetchStudents]);
 
-  // Populate class filter from fetched students
+  // Fetch the teacher's own classes directly (so dropdown works even with 0 students)
   useEffect(() => {
-    const seen = new Map<string, string>();
-    students.forEach(s => {
-      if (s.classes) seen.set(s.classes.id, s.classes.name);
-    });
-    setClasses(Array.from(seen.entries()).map(([id, name]) => ({ id, name })));
-  }, [students]);
+    supabase
+      .from('classes')
+      .select('id, name')
+      .eq('teacher_id', profile.id)
+      .order('name')
+      .then(({ data }) => setClasses((data || []) as { id: string; name: string }[]));
+  }, [profile.id]);
 
   // Open student detail and fetch sub-data
   const openStudent = async (s: StudentRow) => {
@@ -168,8 +165,40 @@ export default function TeacherStudentsSection({ profile }: Props) {
     ? Math.round((attSummary.present / attSummary.total) * 100)
     : null;
 
-  // Count students with health concerns (any health records)
-  const atRiskIds = new Set(students.filter(s => s.student_id).map(() => ''));
+  const openAddModal = async () => {
+    setShowAddModal(true);
+    setAddSearch('');
+    setAddError('');
+    setAddClassId(classes[0]?.id ?? '');
+    // Fetch all active students so the teacher can pick any
+    const { data } = await supabase
+      .from('students')
+      .select('id, student_id, gender, date_of_birth, is_active, profiles:profile_id(first_name,last_name,phone,email), classes:class_id(id,name,level)')
+      .eq('is_active', true)
+      .order('student_id');
+    setAllStudents((data || []) as unknown as StudentRow[]);
+  };
+
+  const handleAssign = async (student: StudentRow) => {
+    if (!addClassId) { setAddError('Please select a class first.'); return; }
+    setAddLoading(true);
+    setAddError('');
+    const { error } = await supabase.rpc('teacher_assign_student', {
+      p_student_id: student.id,
+      p_class_id: addClassId,
+    });
+    setAddLoading(false);
+    if (error) { setAddError(error.message); return; }
+    setShowAddModal(false);
+    fetchStudents();
+  };
+
+  const filteredAdd = allStudents.filter(s => {
+    const name = `${s.profiles?.first_name ?? ''} ${s.profiles?.last_name ?? ''}`.toLowerCase();
+    const id = (s.student_id ?? '').toLowerCase();
+    const q = addSearch.toLowerCase();
+    return !q || name.includes(q) || id.includes(q);
+  });
 
   return (
     <div className="space-y-5">
@@ -181,6 +210,14 @@ export default function TeacherStudentsSection({ profile }: Props) {
           </h2>
           <p className="text-sm text-gray-500 mt-0.5">{filtered.length} student{filtered.length !== 1 ? 's' : ''} shown</p>
         </div>
+        <button
+          onClick={openAddModal}
+          disabled={classes.length === 0}
+          title={classes.length === 0 ? 'You have no classes assigned yet' : 'Assign a student to your class'}
+          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          <UserPlus size={16} /> Add Student
+        </button>
       </div>
 
       {/* Filters */}
@@ -252,6 +289,90 @@ export default function TeacherStudentsSection({ profile }: Props) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* ── Add Student Modal ── */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between p-5 border-b">
+              <div>
+                <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                  <UserPlus size={20} className="text-indigo-500" /> Add Student to Class
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">Search and assign any student to one of your classes</p>
+              </div>
+              <button onClick={() => setShowAddModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                <X size={18} className="text-gray-500" />
+              </button>
+            </div>
+
+            {/* Class selector + search */}
+            <div className="p-4 border-b space-y-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Assign to class</label>
+                <div className="relative">
+                  <select
+                    value={addClassId}
+                    onChange={e => setAddClassId(e.target.value)}
+                    className="w-full pl-3 pr-8 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 appearance-none bg-white"
+                  >
+                    {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <ChevronDown size={13} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+              <div className="relative">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or student ID…"
+                  value={addSearch}
+                  onChange={e => setAddSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  autoFocus
+                />
+              </div>
+              {addError && (
+                <p className="text-sm text-red-600 flex items-center gap-1.5">
+                  <AlertCircle size={14} /> {addError}
+                </p>
+              )}
+            </div>
+
+            {/* Student list */}
+            <div className="flex-1 overflow-y-auto divide-y divide-gray-50">
+              {filteredAdd.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-10">No students found</p>
+              ) : (
+                filteredAdd.map(s => {
+                  const fullName = `${s.profiles?.first_name ?? ''} ${s.profiles?.last_name ?? ''}`.trim();
+                  const currentClass = s.classes?.name ?? 'Unassigned';
+                  return (
+                    <div key={s.id} className="flex items-center gap-3 px-4 py-3 hover:bg-indigo-50 transition-colors">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
+                        {(s.profiles?.first_name?.[0] ?? '?')}{(s.profiles?.last_name?.[0] ?? '')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">{fullName || '—'}</p>
+                        <p className="text-xs text-gray-400">{s.student_id} · currently in <span className="text-indigo-600">{currentClass}</span></p>
+                      </div>
+                      <button
+                        onClick={() => handleAssign(s)}
+                        disabled={addLoading}
+                        className="flex items-center gap-1 text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium px-3 py-1.5 rounded-lg transition-colors flex-shrink-0"
+                      >
+                        {addLoading ? <Loader2 size={12} className="animate-spin" /> : <UserPlus size={12} />}
+                        Assign
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       )}
 
