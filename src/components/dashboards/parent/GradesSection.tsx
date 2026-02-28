@@ -143,13 +143,21 @@ export default function ParentGradesSection({ profile }: Props) {
     // Result card requires a specific term; fall back to First Term if "All Terms" is selected
     const effectiveTerm = filterTerm || TERMS[0];
     setLoadingResult(true);
-    const [{ data: sheet }, { data: gradeRows }] = await Promise.all([
-      supabase.from('result_sheets').select('*').eq('student_id', childId).eq('term', effectiveTerm).eq('academic_year', filterYear).eq('is_published', true).maybeSingle(),
-      supabase.from('grades').select('*').eq('student_id', childId).eq('term', effectiveTerm).eq('academic_year', filterYear),
-    ]);
-    setResultSheet(sheet as ResultSheetRow | null);
-    setResultSubjects(computeSubjects((gradeRows || []) as Grade[]));
-    setLoadingResult(false);
+    try {
+      const [{ data: sheet, error: sheetErr }, { data: gradeRows, error: gradeErr }] = await Promise.all([
+        supabase.from('result_sheets').select('*').eq('student_id', childId).eq('term', effectiveTerm).eq('academic_year', filterYear).eq('is_published', true).maybeSingle(),
+        supabase.from('grades').select('*').eq('student_id', childId).eq('term', effectiveTerm).eq('academic_year', filterYear),
+      ]);
+      if (sheetErr) throw sheetErr;
+      if (gradeErr) throw gradeErr;
+      setResultSheet(sheet as ResultSheetRow | null);
+      setResultSubjects(computeSubjects((gradeRows || []) as Grade[]));
+    } catch {
+      setResultSheet(null);
+      setResultSubjects([]);
+    } finally {
+      setLoadingResult(false);
+    }
   };
 
   useEffect(() => { if (selectedChild) fetchGrades(selectedChild); }, [selectedChild]);

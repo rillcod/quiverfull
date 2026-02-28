@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ClipboardCheck } from 'lucide-react';
+import { ClipboardCheck, AlertCircle } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { ProfileRow, ClassRow, AttendanceStatus } from '../../../lib/supabase';
 
@@ -18,6 +18,7 @@ export default function AttendanceSection({ profile }: Props) {
   const [statuses, setStatuses] = useState<Record<string, AttendanceStatus>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
   useEffect(() => {
     supabase.from('classes').select('id,name,level').eq('teacher_id', profile.id)
@@ -46,9 +47,12 @@ export default function AttendanceSection({ profile }: Props) {
 
   const save = async () => {
     setSaving(true);
+    setSaveError('');
     const records = students.map(s => ({ student_id: s.id, date, status: (statuses[s.id] || 'present') as AttendanceStatus, marked_by: profile.id }));
-    await supabase.from('attendance').upsert(records, { onConflict: 'student_id,date' });
-    setSaving(false); setSaved(true);
+    const { error } = await supabase.from('attendance').upsert(records, { onConflict: 'student_id,date' });
+    setSaving(false);
+    if (error) { setSaveError(error.message); return; }
+    setSaved(true);
     setTimeout(() => setSaved(false), 3000);
   };
 
@@ -75,6 +79,11 @@ export default function AttendanceSection({ profile }: Props) {
           </button>
         )}
       </div>
+      {saveError && (
+        <div className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+          <AlertCircle size={15} className="flex-shrink-0" /> {saveError}
+        </div>
+      )}
       {students.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">

@@ -107,6 +107,11 @@ export default function StudentCBTSection({ profile }: Props) {
     setExamView('taking');
   };
 
+  const handleAutoSubmit = useCallback(() => { submitExam(true); }, [sessionId, questions, answers, activeExam]);
+  // Ref keeps the interval from capturing a stale closure — always calls the latest version
+  const handleAutoSubmitRef = useRef(handleAutoSubmit);
+  useEffect(() => { handleAutoSubmitRef.current = handleAutoSubmit; }, [handleAutoSubmit]);
+
   // ── Timer ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (examView !== 'taking') {
@@ -115,14 +120,12 @@ export default function StudentCBTSection({ profile }: Props) {
     }
     timerRef.current = setInterval(() => {
       setTimeLeft(t => {
-        if (t <= 1) { handleAutoSubmit(); return 0; }
+        if (t <= 1) { handleAutoSubmitRef.current(); return 0; }
         return t - 1;
       });
     }, 1000);
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [examView]);
-
-  const handleAutoSubmit = useCallback(() => { submitExam(true); }, [sessionId, questions, answers, activeExam]);
 
   // ── Save Answer ────────────────────────────────────────────────────────────
   const selectAnswer = async (questionId: string, option: string) => {
