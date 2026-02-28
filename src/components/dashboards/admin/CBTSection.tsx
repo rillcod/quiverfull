@@ -163,32 +163,39 @@ export default function CBTSection({ profile }: Props) {
   const saveExam = async () => {
     if (!examForm.title.trim() || !examForm.subject.trim()) return showToast('Title and subject are required', 'error');
     setExamSaving(true);
-    const payload = {
-      title: examForm.title.trim(), subject: examForm.subject.trim(),
-      class_id: examForm.class_id || null,
-      duration_minutes: parseInt(examForm.duration_minutes) || 30,
-      total_marks: parseInt(examForm.total_marks) || 0,
-      start_time: examForm.start_time ? new Date(examForm.start_time).toISOString() : null,
-      end_time: examForm.end_time ? new Date(examForm.end_time).toISOString() : null,
-      term: examForm.term, academic_year: examForm.academic_year,
-      instructions: examForm.instructions.trim(),
-      is_published: examForm.is_published,
-      updated_at: new Date().toISOString(),
-    };
-    if (editExam) {
-      await supabase.from('cbt_exams').update(payload).eq('id', editExam.id);
-      showToast('Exam updated');
-    } else {
-      await supabase.from('cbt_exams').insert({ ...payload, created_by: profile.id });
-      showToast('Exam created');
+    try {
+      const payload = {
+        title: examForm.title.trim(), subject: examForm.subject.trim(),
+        class_id: examForm.class_id || null,
+        duration_minutes: parseInt(examForm.duration_minutes) || 30,
+        total_marks: parseInt(examForm.total_marks) || 0,
+        start_time: examForm.start_time ? new Date(examForm.start_time).toISOString() : null,
+        end_time: examForm.end_time ? new Date(examForm.end_time).toISOString() : null,
+        term: examForm.term, academic_year: examForm.academic_year,
+        instructions: examForm.instructions.trim(),
+        is_published: examForm.is_published,
+        updated_at: new Date().toISOString(),
+      };
+      if (editExam) {
+        const { error } = await supabase.from('cbt_exams').update(payload).eq('id', editExam.id);
+        if (error) throw error;
+        showToast('Exam updated');
+      } else {
+        const { error } = await supabase.from('cbt_exams').insert({ ...payload, created_by: profile.id });
+        if (error) throw error;
+        showToast('Exam created');
+      }
+      setShowExamModal(false);
+      fetchExams();
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Failed to save exam', 'error');
     }
-    setShowExamModal(false);
-    fetchExams();
     setExamSaving(false);
   };
 
   const togglePublish = async (exam: ExamWithClass) => {
-    await supabase.from('cbt_exams').update({ is_published: !exam.is_published, updated_at: new Date().toISOString() }).eq('id', exam.id);
+    const { error } = await supabase.from('cbt_exams').update({ is_published: !exam.is_published, updated_at: new Date().toISOString() }).eq('id', exam.id);
+    if (error) { showToast(error.message, 'error'); return; }
     showToast(exam.is_published ? 'Exam unpublished' : 'Exam published');
     fetchExams();
     if (activeExam?.id === exam.id) setActiveExam(p => p ? { ...p, is_published: !p.is_published } : p);
@@ -197,7 +204,8 @@ export default function CBTSection({ profile }: Props) {
   const deleteExam = async () => {
     if (!deleteTarget || deleteTarget.type !== 'exam') return;
     setDeleting(true);
-    await supabase.from('cbt_exams').delete().eq('id', deleteTarget.id);
+    const { error } = await supabase.from('cbt_exams').delete().eq('id', deleteTarget.id);
+    if (error) { showToast(error.message, 'error'); setDeleting(false); return; }
     showToast('Exam deleted');
     setDeleteTarget(null);
     if (activeExam?.id === deleteTarget.id) { setView('list'); setActiveExam(null); }
@@ -219,27 +227,33 @@ export default function CBTSection({ profile }: Props) {
     if (!question_text.trim() || !option_a.trim() || !option_b.trim() || !option_c.trim() || !option_d.trim())
       return showToast('All fields are required', 'error');
     setQSaving(true);
-    const payload = { question_text: question_text.trim(), option_a: option_a.trim(), option_b: option_b.trim(), option_c: option_c.trim(), option_d: option_d.trim(), correct_option, marks: parseInt(qForm.marks) || 1 };
-    if (editQ) {
-      await supabase.from('cbt_questions').update(payload).eq('id', editQ.id);
-      showToast('Question updated');
-    } else {
-      const nextIdx = questions.length;
-      await supabase.from('cbt_questions').insert({ ...payload, exam_id: activeExam.id, order_index: nextIdx });
-      showToast('Question added');
+    try {
+      const payload = { question_text: question_text.trim(), option_a: option_a.trim(), option_b: option_b.trim(), option_c: option_c.trim(), option_d: option_d.trim(), correct_option, marks: parseInt(qForm.marks) || 1 };
+      if (editQ) {
+        const { error } = await supabase.from('cbt_questions').update(payload).eq('id', editQ.id);
+        if (error) throw error;
+        showToast('Question updated');
+      } else {
+        const { error } = await supabase.from('cbt_questions').insert({ ...payload, exam_id: activeExam.id, order_index: questions.length });
+        if (error) throw error;
+        showToast('Question added');
+      }
+      // Recompute total_marks
+      const newMarks = questions.reduce((s, q) => s + (editQ?.id === q.id ? parseInt(qForm.marks) || 1 : q.marks), editQ ? 0 : parseInt(qForm.marks) || 1);
+      await supabase.from('cbt_exams').update({ total_marks: newMarks, updated_at: new Date().toISOString() }).eq('id', activeExam.id);
+      setShowQModal(false);
+      fetchQuestions(activeExam.id);
+    } catch (e: unknown) {
+      showToast(e instanceof Error ? e.message : 'Failed to save question', 'error');
     }
-    // Recompute total_marks
-    const newMarks = questions.reduce((s, q) => s + (editQ?.id === q.id ? parseInt(qForm.marks) || 1 : q.marks), editQ ? 0 : parseInt(qForm.marks) || 1);
-    await supabase.from('cbt_exams').update({ total_marks: newMarks, updated_at: new Date().toISOString() }).eq('id', activeExam.id);
-    setShowQModal(false);
-    fetchQuestions(activeExam.id);
     setQSaving(false);
   };
 
   const deleteQuestion = async () => {
     if (!deleteTarget || deleteTarget.type !== 'question' || !activeExam) return;
     setDeleting(true);
-    await supabase.from('cbt_questions').delete().eq('id', deleteTarget.id);
+    const { error } = await supabase.from('cbt_questions').delete().eq('id', deleteTarget.id);
+    if (error) { showToast(error.message, 'error'); setDeleting(false); return; }
     const remaining = questions.filter(q => q.id !== deleteTarget.id);
     const newMarks = remaining.reduce((s, q) => s + q.marks, 0);
     await supabase.from('cbt_exams').update({ total_marks: newMarks, updated_at: new Date().toISOString() }).eq('id', activeExam.id);
