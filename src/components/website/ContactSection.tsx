@@ -127,14 +127,14 @@ export default function ContactSection() {
             <div className="rounded-2xl h-64 overflow-hidden border border-gray-200 shadow-sm">
               <iframe
                 title="The Quiverfull School Location"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=5.5929%2C6.3119%2C5.6529%2C6.3519&layer=mapnik&marker=6.3319%2C5.6229"
+                src="https://www.openstreetmap.org/export/embed.html?bbox=5.6074%2C6.2962%2C5.6214%2C6.3062&layer=mapnik&marker=6.301195%2C5.614412"
                 className="w-full h-full border-0"
                 loading="lazy"
                 allowFullScreen
               />
             </div>
             <a
-              href="https://www.openstreetmap.org/?mlat=6.3319&mlon=5.6229#map=15/6.3319/5.6229"
+              href="https://www.openstreetmap.org/?mlat=6.301195&mlon=5.614412#map=17/6.301195/5.614412"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm text-orange-500 hover:underline mt-2"
