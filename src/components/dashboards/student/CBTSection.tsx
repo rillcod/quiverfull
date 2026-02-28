@@ -13,6 +13,9 @@ interface ExamWithClass extends CbtExamRow {
   session?: { id: string; total_score: number; is_submitted: boolean; submitted_at: string | null } | null;
 }
 
+// Deliberately omits correct_option — answers are never sent to the browser
+type StudentQuestion = Omit<CbtQuestionRow, 'correct_option'>;
+
 type ExamStatus = 'available' | 'in_progress' | 'completed' | 'not_started';
 
 function getExamStatus(exam: ExamWithClass): ExamStatus {
@@ -37,14 +40,14 @@ export default function StudentCBTSection({ profile }: Props) {
 
   // Exam-taking state
   const [activeExam, setActiveExam] = useState<ExamWithClass | null>(null);
-  const [questions, setQuestions] = useState<CbtQuestionRow[]>([]);
+  const [questions, setQuestions] = useState<StudentQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<string, string>>({}); // questionId -> option
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [timeLeft, setTimeLeft] = useState(0);
   const [examView, setExamView] = useState<'list' | 'confirm_start' | 'taking' | 'confirm_submit' | 'result'>('list');
   const [submitting, setSubmitting] = useState(false);
-  const [finalScore, setFinalScore] = useState<{ score: number; total: number; pct: number } | null>(null);
+  const [finalScore, setFinalScore] = useState<{ score: number; total: number; pct: number; correctCount: number; totalQuestions: number } | null>(null);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -84,8 +87,11 @@ export default function StudentCBTSection({ profile }: Props) {
     if (!sid) return;
     setSessionId(sid);
 
-    const { data: qs } = await supabase.from('cbt_questions').select('*').eq('exam_id', exam.id).order('order_index').order('created_at');
-    setQuestions((qs || []) as CbtQuestionRow[]);
+    // Explicitly exclude correct_option — scoring happens server-side via submit_cbt_exam RPC
+    const { data: qs } = await supabase.from('cbt_questions')
+      .select('id, exam_id, question_text, option_a, option_b, option_c, option_d, marks, order_index, created_at')
+      .eq('exam_id', exam.id).order('order_index').order('created_at');
+    setQuestions((qs || []) as StudentQuestion[]);
 
     // Load existing answers
     const { data: existingAnswers } = await supabase.from('cbt_answers').select('question_id, selected_option').eq('session_id', sid);
@@ -130,15 +136,15 @@ export default function StudentCBTSection({ profile }: Props) {
     setSubmitting(true);
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
 
-    // Calculate score
-    let score = 0;
-    questions.forEach(q => {
-      if (answers[q.id] === q.correct_option) score += q.marks;
-    });
-
-    await supabase.from('cbt_sessions').update({ total_score: score, is_submitted: true, submitted_at: new Date().toISOString() }).eq('id', sessionId);
+    // Score is calculated server-side — correct_option never touches the browser
+    const { data, error } = await supabase.rpc('submit_cbt_exam', { p_session_id: sessionId });
+    if (error || !data) {
+      setSubmitting(false);
+      return;
+    }
+    const { score, correct_count, total_questions } = data as { score: number; correct_count: number; total_questions: number };
     const pct = activeExam.total_marks > 0 ? Math.round((score / activeExam.total_marks) * 100) : 0;
-    setFinalScore({ score, total: activeExam.total_marks, pct });
+    setFinalScore({ score, total: activeExam.total_marks, pct, correctCount: correct_count, totalQuestions: total_questions });
     setExamView('result');
     setSubmitting(false);
     if (studentId) fetchExams(studentId);
@@ -174,9 +180,9 @@ export default function StudentCBTSection({ profile }: Props) {
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4 w-full space-y-2 text-sm">
-          <div className="flex justify-between"><span className="text-gray-500">Total Questions</span><span className="font-medium">{questions.length}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Correct</span><span className="font-medium text-green-600">{questions.filter(q => answers[q.id] === q.correct_option).length}</span></div>
-          <div className="flex justify-between"><span className="text-gray-500">Wrong / Skipped</span><span className="font-medium text-red-500">{questions.length - questions.filter(q => answers[q.id] === q.correct_option).length}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Total Questions</span><span className="font-medium">{finalScore.totalQuestions}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Correct</span><span className="font-medium text-green-600">{finalScore.correctCount}</span></div>
+          <div className="flex justify-between"><span className="text-gray-500">Wrong / Skipped</span><span className="font-medium text-red-500">{finalScore.totalQuestions - finalScore.correctCount}</span></div>
         </div>
         <button onClick={backToList} className="w-full py-3 bg-pink-600 text-white rounded-xl font-medium hover:bg-pink-700">Back to Exams</button>
       </div>
