@@ -89,22 +89,24 @@ export default function CBTSection({ profile }: Props) {
 
   const fetchExams = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('cbt_exams')
-      .select('*, classes:class_id(name)')
-      .order('created_at', { ascending: false });
-    if (data) {
-      // Fetch question counts and session counts
-      const enriched = await Promise.all((data as ExamWithClass[]).map(async (e) => {
-        const [{ count: qc }, { count: sc }] = await Promise.all([
-          supabase.from('cbt_questions').select('*', { count: 'exact', head: true }).eq('exam_id', e.id),
-          supabase.from('cbt_sessions').select('*', { count: 'exact', head: true }).eq('exam_id', e.id).eq('is_submitted', true),
-        ]);
-        return { ...e, question_count: qc ?? 0, session_count: sc ?? 0 };
-      }));
-      setExams(enriched);
+    try {
+      const { data } = await supabase
+        .from('cbt_exams')
+        .select('*, classes:class_id(name)')
+        .order('created_at', { ascending: false });
+      if (data) {
+        const enriched = await Promise.all((data as ExamWithClass[]).map(async (e) => {
+          const [{ count: qc }, { count: sc }] = await Promise.all([
+            supabase.from('cbt_questions').select('*', { count: 'exact', head: true }).eq('exam_id', e.id),
+            supabase.from('cbt_sessions').select('*', { count: 'exact', head: true }).eq('exam_id', e.id).eq('is_submitted', true),
+          ]);
+          return { ...e, question_count: qc ?? 0, session_count: sc ?? 0 };
+        }));
+        setExams(enriched);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const openExam = async (exam: ExamWithClass) => {
@@ -116,20 +118,26 @@ export default function CBTSection({ profile }: Props) {
 
   const fetchQuestions = async (examId: string) => {
     setQLoading(true);
-    const { data } = await supabase.from('cbt_questions').select('*').eq('exam_id', examId).order('order_index').order('created_at');
-    setQuestions((data || []) as CbtQuestionRow[]);
-    setQLoading(false);
+    try {
+      const { data } = await supabase.from('cbt_questions').select('*').eq('exam_id', examId).order('order_index').order('created_at');
+      setQuestions((data || []) as CbtQuestionRow[]);
+    } finally {
+      setQLoading(false);
+    }
   };
 
   const fetchResults = async (examId: string) => {
     setRLoading(true);
-    const { data } = await supabase
-      .from('cbt_sessions')
-      .select('*, students:student_id(student_id, profiles:profile_id(first_name, last_name))')
-      .eq('exam_id', examId)
-      .order('total_score', { ascending: false });
-    setResults((data || []) as SessionResult[]);
-    setRLoading(false);
+    try {
+      const { data } = await supabase
+        .from('cbt_sessions')
+        .select('*, students:student_id(student_id, profiles:profile_id(first_name, last_name))')
+        .eq('exam_id', examId)
+        .order('total_score', { ascending: false });
+      setResults((data || []) as SessionResult[]);
+    } finally {
+      setRLoading(false);
+    }
   };
 
   // ── Exam CRUD ──────────────────────────────────────────────────────────────

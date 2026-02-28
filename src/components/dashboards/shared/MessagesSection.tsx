@@ -68,37 +68,40 @@ export default function MessagesSection({ profile, role }: Props) {
 
   const fetchMessages = async () => {
     setLoading(true);
-    const [inboxRes, sentRes] = await Promise.all([
-      supabase.from('messages')
-        .select('*, sender:sender_id(first_name, last_name, role), recipient:recipient_id(first_name, last_name, role)')
-        .eq('recipient_id', profile.id)
-        .is('parent_message_id', null)
-        .order('created_at', { ascending: false })
-        .limit(100),
-      supabase.from('messages')
-        .select('*, sender:sender_id(first_name, last_name, role), recipient:recipient_id(first_name, last_name, role)')
-        .eq('sender_id', profile.id)
-        .is('parent_message_id', null)
-        .order('created_at', { ascending: false })
-        .limit(100),
-    ]);
-    // Also fetch broadcasts for non-admin users
-    let broadcastMessages: MessageWithProfiles[] = [];
-    if (role !== 'admin') {
-      const { data: bcast } = await supabase.from('messages')
-        .select('*, sender:sender_id(first_name, last_name, role)')
-        .is('recipient_id', null)
-        .is('parent_message_id', null)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      broadcastMessages = (bcast || []) as MessageWithProfiles[];
+    try {
+      const [inboxRes, sentRes] = await Promise.all([
+        supabase.from('messages')
+          .select('*, sender:sender_id(first_name, last_name, role), recipient:recipient_id(first_name, last_name, role)')
+          .eq('recipient_id', profile.id)
+          .is('parent_message_id', null)
+          .order('created_at', { ascending: false })
+          .limit(100),
+        supabase.from('messages')
+          .select('*, sender:sender_id(first_name, last_name, role), recipient:recipient_id(first_name, last_name, role)')
+          .eq('sender_id', profile.id)
+          .is('parent_message_id', null)
+          .order('created_at', { ascending: false })
+          .limit(100),
+      ]);
+      // Also fetch broadcasts for non-admin users
+      let broadcastMessages: MessageWithProfiles[] = [];
+      if (role !== 'admin') {
+        const { data: bcast } = await supabase.from('messages')
+          .select('*, sender:sender_id(first_name, last_name, role)')
+          .is('recipient_id', null)
+          .is('parent_message_id', null)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        broadcastMessages = (bcast || []) as MessageWithProfiles[];
+      }
+      const inboxData = [...((inboxRes.data || []) as MessageWithProfiles[]), ...broadcastMessages]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setInbox(inboxData);
+      setSent((sentRes.data || []) as MessageWithProfiles[]);
+      setUnreadCount(inboxData.filter(m => !m.is_read).length);
+    } finally {
+      setLoading(false);
     }
-    const inboxData = [...((inboxRes.data || []) as MessageWithProfiles[]), ...broadcastMessages]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    setInbox(inboxData);
-    setSent((sentRes.data || []) as MessageWithProfiles[]);
-    setUnreadCount(inboxData.filter(m => !m.is_read).length);
-    setLoading(false);
   };
 
   const loadThread = async (msg: MessageWithProfiles) => {

@@ -32,7 +32,7 @@ export default function OverviewSection({ profile, onNavigate }: Props) {
     (async () => {
       const today = new Date().toISOString().split('T')[0];
       const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-
+      try {
       const [{ data: classes }, { data: grades }, { count: totalGradesCount }] = await Promise.all([
         supabase.from('classes').select('*, students(count)').eq('teacher_id', profile.id),
         supabase.from('grades')
@@ -108,7 +108,9 @@ export default function OverviewSection({ profile, onNavigate }: Props) {
         totalGradesEntered: totalGradesCount ?? 0,
         lowAttStudents: lowAttStudents.slice(0, 5),
       });
-      setLoading(false);
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [profile.id]);
 
