@@ -77,49 +77,53 @@ export default function LMSSection({ profile }: Props) {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const [{ data: topicData }, { data: classData }] = await Promise.all([
-      supabase.from('courses')
-        .select('*, classes:class_id(name, level)')
-        .eq('teacher_id', profile.id).eq('is_active', true)
-        .order('subject').order('created_at', { ascending: false }),
-      supabase.from('classes').select('id, name').eq('teacher_id', profile.id).order('name'),
-    ]);
-    setTopics((topicData || []) as CourseWithClass[]);
-    setClasses((classData || []) as Pick<ClassRow, 'id' | 'name'>[]);
+    try {
+      // Round 1: courses + classes + subjects in parallel
+      const [{ data: topicData }, { data: classData }, { data: subRows }] = await Promise.all([
+        supabase.from('courses')
+          .select('*, classes:class_id(name, level)')
+          .eq('teacher_id', profile.id).eq('is_active', true)
+          .order('subject').order('created_at', { ascending: false }),
+        supabase.from('classes').select('id, name').eq('teacher_id', profile.id).order('name'),
+        supabase.from('subjects').select('name').eq('is_active', true).order('name'),
+      ]);
+      setTopics((topicData || []) as CourseWithClass[]);
+      setClasses((classData || []) as Pick<ClassRow, 'id' | 'name'>[]);
+      if (subRows && subRows.length > 0) {
+        const dbSubjects = [...new Set((subRows as { name: string }[]).map(s => s.name))];
+        setSubjectOptions(dbSubjects);
+      }
 
-    // Load subject names from DB subjects table
-    const { data: subRows } = await supabase.from('subjects').select('name').eq('is_active', true).order('name');
-    if (subRows && subRows.length > 0) {
-      const dbSubjects = [...new Set((subRows as { name: string }[]).map(s => s.name))];
-      setSubjectOptions(dbSubjects);
-    }
+      // Round 2: assignments (depends on courseIds)
+      const courseIds = (topicData || []).map((c: { id: string }) => c.id);
+      if (courseIds.length > 0) {
+        const { data: assignData } = await supabase
+          .from('assignments')
+          .select('*, courses:course_id(title, subject)')
+          .in('course_id', courseIds)
+          .order('created_at', { ascending: false })
+          .limit(100);
+        setAssignments((assignData || []) as AssignmentWithCourse[]);
 
-    const courseIds = (topicData || []).map((c: { id: string }) => c.id);
-    if (courseIds.length > 0) {
-      const { data: assignData } = await supabase
-        .from('assignments')
-        .select('*, courses:course_id(title, subject)')
-        .in('course_id', courseIds)
-        .order('created_at', { ascending: false })
-        .limit(100);
-      setAssignments((assignData || []) as AssignmentWithCourse[]);
-
-      const assignIds = (assignData || []).map((a: { id: string }) => a.id);
-      if (assignIds.length > 0) {
-        const { data: subData } = await supabase
-          .from('submissions')
-          .select('*, students:student_id(student_id, profiles:profile_id(first_name, last_name)), assignments:assignment_id(title, max_score, course_id, courses:course_id(subject))')
-          .in('assignment_id', assignIds)
-          .order('submitted_at', { ascending: false });
-        setSubmissions((subData || []) as SubmissionWithStudent[]);
+        // Round 3: submissions (depends on assignIds)
+        const assignIds = (assignData || []).map((a: { id: string }) => a.id);
+        if (assignIds.length > 0) {
+          const { data: subData } = await supabase
+            .from('submissions')
+            .select('*, students:student_id(student_id, profiles:profile_id(first_name, last_name)), assignments:assignment_id(title, max_score, course_id, courses:course_id(subject))')
+            .in('assignment_id', assignIds)
+            .order('submitted_at', { ascending: false });
+          setSubmissions((subData || []) as SubmissionWithStudent[]);
+        } else {
+          setSubmissions([]);
+        }
       } else {
+        setAssignments([]);
         setSubmissions([]);
       }
-    } else {
-      setAssignments([]);
-      setSubmissions([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [profile.id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -178,6 +182,13 @@ export default function LMSSection({ profile }: Props) {
   const deleteTopic = async (id: string) => {
     await supabase.from('courses').update({ is_active: false }).eq('id', id);
     setToast({ msg: 'Topic removed', type: 'success' });
+    fetchData();
+  };
+
+  const deleteAssignment = async (id: string) => {
+    if (!confirm('Delete this assignment? This will also remove all submissions.')) return;
+    await supabase.from('assignments').delete().eq('id', id);
+    setToast({ msg: 'Assignment deleted', type: 'success' });
     fetchData();
   };
 
@@ -381,6 +392,7 @@ export default function LMSSection({ profile }: Props) {
                       <th className="py-3 px-4">Max</th>
                       <th className="py-3 px-4">Due</th>
                       <th className="py-3 px-4">Submissions</th>
+                      <th className="py-3 px-4"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -412,11 +424,17 @@ export default function LMSSection({ profile }: Props) {
                               {subs.length === 0 && <span className="text-xs text-gray-400">0 submitted</span>}
                             </button>
                           </td>
+                          <td className="py-3 px-4">
+                            <button onClick={() => deleteAssignment(a.id)}
+                              className="p-1.5 hover:bg-red-50 rounded-lg text-red-400" title="Delete assignment">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}
                     {assignments.length === 0 && (
-                      <tr><td colSpan={6} className="text-center py-12 text-gray-400">
+                      <tr><td colSpan={7} className="text-center py-12 text-gray-400">
                         No assignments yet — click "Add Assignment" to create one
                       </td></tr>
                     )}

@@ -19,7 +19,7 @@ interface StudentRow {
 }
 
 interface AttendanceSummary { present: number; absent: number; late: number; excused: number; total: number; }
-interface GradeSummary { subject: string; assessmentType: string; score: number; maxScore: number; }
+interface GradeSummary { subject: string; assessment_type: string; score: number; max_score: number; }
 interface HealthRecord { id: string; visit_date: string; visit_reason: string; diagnosis: string | null; allergies: string | null; }
 
 function nigerianGrade(score: number, max: number) {
@@ -64,17 +64,29 @@ export default function TeacherStudentsSection({ profile }: Props) {
   const [healthRecords, setHealthRecords] = useState<HealthRecord[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // Load all students (teacher sees all by RLS policy) + class list
+  // Load students only from the teacher's own classes
   const fetchStudents = useCallback(async () => {
     setLoading(true);
+    // First get the teacher's class IDs
+    const { data: myClasses } = await supabase
+      .from('classes')
+      .select('id')
+      .eq('teacher_id', profile.id);
+    const classIds = (myClasses || []).map(c => c.id);
+    if (classIds.length === 0) {
+      setStudents([]);
+      setLoading(false);
+      return;
+    }
     const { data } = await supabase
       .from('students')
       .select('id, student_id, gender, date_of_birth, is_active, profiles:profile_id(first_name,last_name,phone,email), classes:class_id(id,name,level)')
+      .in('class_id', classIds)
       .eq('is_active', true)
       .order('student_id');
     setStudents((data || []) as unknown as StudentRow[]);
     setLoading(false);
-  }, []);
+  }, [profile.id]);
 
   useEffect(() => { fetchStudents(); }, [fetchStudents]);
 
@@ -146,7 +158,7 @@ export default function TeacherStudentsSection({ profile }: Props) {
   const gradesBySubject = grades.reduce<Record<string, { total: number; max: number }>>((acc, g) => {
     if (!acc[g.subject]) acc[g.subject] = { total: 0, max: 0 };
     acc[g.subject].total += g.score;
-    acc[g.subject].max += g.maxScore;
+    acc[g.subject].max += g.max_score;
     return acc;
   }, {});
 

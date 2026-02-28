@@ -50,7 +50,7 @@ export default function StudentCBTSection({ profile }: Props) {
 
   useEffect(() => {
     // Get student record
-    supabase.from('students').select('id').eq('profile_id', profile.id).single().then(({ data }) => {
+    supabase.from('students').select('id').eq('profile_id', profile.id).maybeSingle().then(({ data }) => {
       if (data) { setStudentId(data.id); fetchExams(data.id); }
       else setLoading(false);
     });

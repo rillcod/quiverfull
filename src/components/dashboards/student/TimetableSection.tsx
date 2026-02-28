@@ -34,7 +34,7 @@ export default function StudentTimetableSection({ profile }: Props) {
   const [className, setClassName] = useState('');
 
   useEffect(() => {
-    supabase.from('students').select('class_id, classes:class_id(name)').eq('profile_id', profile.id).single().then(({ data }) => {
+    supabase.from('students').select('class_id, classes:class_id(name)').eq('profile_id', profile.id).maybeSingle().then(({ data }) => {
       if (data?.class_id) {
         setClassId(data.class_id);
         setClassName((data as unknown as { classes?: { name: string } }).classes?.name ?? '');

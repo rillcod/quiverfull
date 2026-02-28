@@ -15,7 +15,7 @@ export default function FeesSection({ profile }: Props) {
 
   useEffect(() => {
     (async () => {
-      const { data: parent } = await supabase.from('parents').select('id').eq('profile_id', profile.id).single();
+      const { data: parent } = await supabase.from('parents').select('id').eq('profile_id', profile.id).maybeSingle();
       if (!parent) { setLoading(false); return; }
       const { data: links } = await supabase.from('student_parents').select('student_id').eq('parent_id', parent.id);
       const ids = (links || []).map((l: StudentParentLink) => l.student_id);

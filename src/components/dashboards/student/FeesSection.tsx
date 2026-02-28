@@ -28,11 +28,11 @@ export default function StudentFeesSection({ profile }: Props) {
   const [studentId, setStudentId] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.from('students').select('id').eq('profile_id', profile.id).single().then(({ data }) => {
+    supabase.from('students').select('id').eq('profile_id', profile.id).maybeSingle().then(({ data }) => {
       if (data) { setStudentId(data.id); fetchFees(data.id); }
       else setLoading(false);
     });
-  }, []);
+  }, [profile.id]);
 
   const fetchFees = async (sid: string) => {
     setLoading(true);

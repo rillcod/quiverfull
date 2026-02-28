@@ -85,7 +85,14 @@ export default function GradesSection({ profile }: Props) {
             </tbody>
           </table>
           {filtered.length === 0 && (
-            <p className="text-center py-10 text-gray-400">No grades recorded for {filterTerm} · {filterYear}</p>
+            <div className="text-center py-10 text-gray-400">
+              <p>No grades recorded for <span className="font-medium">{filterTerm} · {filterYear}</span></p>
+              {grades.length > 0 && (
+                <p className="text-xs mt-2 text-blue-500">
+                  You have {grades.length} grade{grades.length !== 1 ? 's' : ''} in other terms — change the filters above to view them.
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>

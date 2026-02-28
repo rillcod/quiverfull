@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, AlertCircle, Send, X, CheckCircle, Clock } from 'lucide-react';
+import { FileText, AlertCircle, Send, X, CheckCircle, Clock, BookOpen, Filter } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useStudentData } from './useStudentData';
 import type { ProfileRow, AssignmentRow, SubmissionRow } from '../../../lib/supabase';
@@ -11,7 +11,7 @@ interface AssignmentWithCourse extends AssignmentRow {
 }
 
 function Toast({ msg, type, onClose }: { msg: string; type: 'success' | 'error'; onClose: () => void }) {
-  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, []);
+  useEffect(() => { const t = setTimeout(onClose, 3500); return () => clearTimeout(t); }, [onClose]);
   return (
     <div className={`fixed bottom-6 right-6 z-[100] px-5 py-3 rounded-xl shadow-xl text-white text-sm font-medium flex items-center gap-2 ${type === 'success' ? 'bg-green-600' : 'bg-red-600'}`}>
       {msg} <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><X className="w-4 h-4" /></button>
@@ -27,12 +27,15 @@ const typeColor: Record<string, string> = {
   classwork: 'bg-green-100 text-green-700',
 };
 
+type FilterTab = 'all' | 'pending' | 'submitted' | 'graded';
+
 export default function AssignmentsSection({ profile }: Props) {
   const { student, loading: studentLoading, error: studentError } = useStudentData(profile.id);
   const [classAssignments, setClassAssignments] = useState<AssignmentWithCourse[]>([]);
   const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [filterTab, setFilterTab] = useState<FilterTab>('all');
 
   // Submit modal state
   const [submitTarget, setSubmitTarget] = useState<AssignmentWithCourse | null>(null);
@@ -43,7 +46,6 @@ export default function AssignmentsSection({ profile }: Props) {
   const fetchAssignments = async (studentId: string, classId: string) => {
     setLoading(true);
     try {
-      // Get courses for this class
       const { data: courses } = await supabase
         .from('courses')
         .select('id')
@@ -58,7 +60,7 @@ export default function AssignmentsSection({ profile }: Props) {
             .from('assignments')
             .select('*, courses:course_id(title, subject, class_id)')
             .in('course_id', courseIds)
-            .order('due_date', { ascending: false }),
+            .order('due_date', { ascending: true }),
           supabase
             .from('submissions')
             .select('*')
@@ -71,22 +73,28 @@ export default function AssignmentsSection({ profile }: Props) {
         setSubmissions([]);
       }
     } catch {
-      // ignore
+      // ignore errors, show empty state
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
+  // ── FIX: depend on both student AND studentLoading so we handle all null states ──
   useEffect(() => {
-    if (!student) return;
+    if (studentLoading) return; // still fetching student record, wait
+    if (!student) {
+      setLoading(false); // no student record found — stop spinning
+      return;
+    }
     if (student.class_id) {
       fetchAssignments(student.id, student.class_id);
     } else {
-      setLoading(false);
+      setLoading(false); // student exists but has no class assigned
     }
-  }, [student]);
+  }, [student, studentLoading]);
 
   const getSubmission = (assignmentId: string) =>
-    submissions.find(s => s.assignment_id === assignmentId) || null;
+    submissions.find(s => s.assignment_id === assignmentId) ?? null;
 
   const openSubmit = (assignment: AssignmentWithCourse) => {
     const existing = getSubmission(assignment.id);
@@ -98,7 +106,7 @@ export default function AssignmentsSection({ profile }: Props) {
   const submitAssignment = async () => {
     if (!submitTarget || !student) return;
     if (!submitContent.trim() && !submitUrl.trim()) {
-      return setToast({ msg: 'Please provide content or a URL', type: 'error' });
+      return setToast({ msg: 'Please provide your answer or a file link', type: 'error' });
     }
     setSubmitting(true);
     try {
@@ -114,11 +122,10 @@ export default function AssignmentsSection({ profile }: Props) {
         { onConflict: 'assignment_id,student_id' }
       );
       if (error) throw error;
-      setToast({ msg: 'Assignment submitted successfully', type: 'success' });
+      setToast({ msg: 'Assignment submitted successfully!', type: 'success' });
       setSubmitTarget(null);
       setSubmitContent('');
       setSubmitUrl('');
-      // Refresh submissions
       if (student.class_id) fetchAssignments(student.id, student.class_id);
     } catch (e: unknown) {
       setToast({ msg: e instanceof Error ? e.message : 'Submission failed', type: 'error' });
@@ -126,9 +133,11 @@ export default function AssignmentsSection({ profile }: Props) {
     setSubmitting(false);
   };
 
+  // ── Loading / error states ──
   if (studentLoading || loading) return (
-    <div className="flex justify-center items-center h-40">
-      <div className="w-8 h-8 border-4 border-pink-300 border-t-pink-600 rounded-full animate-spin" />
+    <div className="flex flex-col justify-center items-center h-48 gap-3">
+      <div className="w-9 h-9 border-4 border-pink-200 border-t-pink-600 rounded-full animate-spin" />
+      <p className="text-sm text-gray-400">Loading your assignments…</p>
     </div>
   );
 
@@ -142,82 +151,191 @@ export default function AssignmentsSection({ profile }: Props) {
   if (!student) return (
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 flex items-start gap-3">
       <AlertCircle className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
-      <div><h3 className="font-semibold text-amber-800">No student record found</h3><p className="text-sm text-amber-700 mt-1">Please contact your school administrator.</p></div>
+      <div><h3 className="font-semibold text-amber-800">No student record found</h3><p className="text-sm text-amber-700 mt-1">Please contact your school administrator to link your profile.</p></div>
     </div>
   );
+
+  if (!student.class_id) return (
+    <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 flex items-start gap-3">
+      <BookOpen className="w-6 h-6 text-blue-500 flex-shrink-0 mt-0.5" />
+      <div><h3 className="font-semibold text-blue-800">Not assigned to a class yet</h3><p className="text-sm text-blue-700 mt-1">Your teacher will add you to your class soon. Assignments will appear here once you're enrolled.</p></div>
+    </div>
+  );
+
+  // Filter logic
+  const getStatus = (a: AssignmentWithCourse) => {
+    const sub = getSubmission(a.id);
+    if (!sub) return 'pending';
+    return sub.status === 'graded' ? 'graded' : 'submitted';
+  };
+
+  const filtered = classAssignments.filter(a => {
+    if (filterTab === 'all') return true;
+    return getStatus(a) === filterTab;
+  });
+
+  const pendingCount = classAssignments.filter(a => getStatus(a) === 'pending').length;
+  const submittedCount = classAssignments.filter(a => getStatus(a) === 'submitted').length;
+  const gradedCount = classAssignments.filter(a => getStatus(a) === 'graded').length;
 
   return (
     <div className="space-y-5">
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
-      <h2 className="text-xl font-bold text-gray-900">My Assignments</h2>
 
-      {classAssignments.length === 0 ? (
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">My Assignments</h2>
+          <p className="text-sm text-gray-500 mt-0.5">{classAssignments.length} assignment{classAssignments.length !== 1 ? 's' : ''} total</p>
+        </div>
+      </div>
+
+      {/* Summary stats */}
+      {classAssignments.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Pending', value: pendingCount, color: 'text-orange-600 bg-orange-50 border-orange-100' },
+            { label: 'Submitted', value: submittedCount, color: 'text-green-600 bg-green-50 border-green-100' },
+            { label: 'Graded', value: gradedCount, color: 'text-blue-600 bg-blue-50 border-blue-100' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className={`rounded-xl border p-3 text-center ${color}`}>
+              <p className="text-2xl font-bold">{value}</p>
+              <p className="text-xs font-medium mt-0.5">{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Filter tabs */}
+      {classAssignments.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {([
+            { key: 'all', label: 'All', count: classAssignments.length },
+            { key: 'pending', label: 'Pending', count: pendingCount },
+            { key: 'submitted', label: 'Submitted', count: submittedCount },
+            { key: 'graded', label: 'Graded', count: gradedCount },
+          ] as const).map(({ key, label, count }) => (
+            <button
+              key={key}
+              onClick={() => setFilterTab(key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                filterTab === key
+                  ? 'bg-pink-600 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              <Filter className="w-3 h-3" /> {label}
+              <span className={`text-xs rounded-full px-1.5 ${filterTab === key ? 'bg-white/30' : 'bg-gray-200'}`}>{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Assignments grid */}
+      {filtered.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          <FileText className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p>No assignments yet</p>
+          <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
+          <p className="font-medium">
+            {classAssignments.length === 0
+              ? 'No assignments yet'
+              : `No ${filterTab === 'all' ? '' : filterTab} assignments`}
+          </p>
+          {classAssignments.length === 0 && (
+            <p className="text-xs mt-1">Your teacher hasn't posted any assignments yet.</p>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {classAssignments.map(a => {
+          {filtered.map(a => {
             const submission = getSubmission(a.id);
-            const isOverdue = a.due_date && new Date(a.due_date) < new Date() && !submission;
+            const now = new Date();
+            const dueDate = a.due_date ? new Date(a.due_date) : null;
+            const isOverdue = dueDate && dueDate < now && !submission;
+            const dueSoon = dueDate && dueDate > now && (dueDate.getTime() - now.getTime()) < 48 * 3600 * 1000 && !submission;
+
             return (
-              <div key={a.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-800">{a.title}</h3>
+              <div
+                key={a.id}
+                className={`bg-white rounded-xl shadow-sm border p-5 transition-shadow hover:shadow-md ${
+                  isOverdue ? 'border-red-200' : dueSoon ? 'border-orange-200' : 'border-gray-100'
+                }`}
+              >
+                {/* Header */}
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-800 truncate">{a.title}</h3>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      {a.courses?.subject} · {a.courses?.title}
+                      {a.courses?.subject && <span className="font-medium text-pink-600">{a.courses.subject}</span>}
+                      {a.courses?.title && <span className="text-gray-400"> · {a.courses.title}</span>}
                     </p>
                   </div>
-                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-medium ${typeColor[a.type] || 'bg-gray-100 text-gray-600'}`}>
+                  <span className={`ml-2 flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium capitalize ${typeColor[a.type] || 'bg-gray-100 text-gray-600'}`}>
                     {a.type}
                   </span>
                 </div>
 
+                {/* Description */}
                 {a.description && (
-                  <p className="text-sm text-gray-600 mb-3">{a.description}</p>
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">{a.description}</p>
                 )}
 
+                {/* Due date + status row */}
                 <div className="flex items-center justify-between mb-3">
-                  <span className={`text-xs ${isOverdue ? 'text-red-500 font-medium' : 'text-gray-400'}`}>
-                    Due: {a.due_date ? new Date(a.due_date).toLocaleDateString() : 'No deadline'}
-                    {isOverdue && ' · Overdue'}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {submission?.score != null && (
-                      <span className="text-xs font-medium text-blue-600">{submission.score}/{a.max_score}</span>
-                    )}
-                    {!submission ? (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                        <Clock className="w-3 h-3" /> Not submitted
-                      </span>
-                    ) : submission.status === 'graded' ? (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                        <CheckCircle className="w-3 h-3" /> Graded
+                  <div className="text-xs">
+                    {dueDate ? (
+                      <span className={
+                        isOverdue ? 'text-red-600 font-semibold' :
+                        dueSoon ? 'text-orange-500 font-medium' :
+                        'text-gray-400'
+                      }>
+                        {isOverdue ? '⚠ Overdue · ' : dueSoon ? '⏰ Due soon · ' : 'Due: '}
+                        {dueDate.toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </span>
                     ) : (
-                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                        <CheckCircle className="w-3 h-3" /> Submitted
-                      </span>
+                      <span className="text-gray-400">No deadline</span>
                     )}
                   </div>
+
+                  {/* Score if graded */}
+                  {submission?.score != null && (
+                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                      {submission.score}/{a.max_score}
+                    </span>
+                  )}
                 </div>
 
+                {/* Submission status badge */}
+                <div className="mb-3">
+                  {!submission ? (
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-lg w-fit">
+                      <Clock className="w-3 h-3" /> Not submitted
+                    </span>
+                  ) : submission.status === 'graded' ? (
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-blue-700 bg-blue-100 px-2.5 py-1 rounded-lg w-fit">
+                      <CheckCircle className="w-3 h-3" /> Graded
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1.5 text-xs font-medium text-green-700 bg-green-100 px-2.5 py-1 rounded-lg w-fit">
+                      <CheckCircle className="w-3 h-3" /> Submitted
+                    </span>
+                  )}
+                </div>
+
+                {/* Teacher feedback */}
                 {submission?.feedback && (
-                  <div className="mb-3 p-2 bg-blue-50 rounded-lg text-xs text-blue-700">
-                    <span className="font-medium">Feedback: </span>{submission.feedback}
+                  <div className="mb-3 p-2.5 bg-blue-50 rounded-lg border border-blue-100">
+                    <p className="text-xs font-medium text-blue-700 mb-0.5">Teacher feedback:</p>
+                    <p className="text-xs text-blue-600">{submission.feedback}</p>
                   </div>
                 )}
 
-                {/* Submit / Resubmit button */}
+                {/* Submit button */}
                 {submission?.status !== 'graded' && (
                   <button
                     onClick={() => openSubmit(a)}
-                    className="flex items-center gap-1.5 w-full justify-center px-3 py-2 bg-pink-600 text-white rounded-lg text-xs font-medium hover:bg-pink-700 mt-1"
+                    className="flex items-center gap-1.5 w-full justify-center px-3 py-2 bg-pink-600 text-white rounded-lg text-xs font-medium hover:bg-pink-700 transition-colors"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    {submission ? 'Resubmit' : 'Submit Assignment'}
+                    {submission ? 'Update submission' : 'Submit Assignment'}
                   </button>
                 )}
               </div>
@@ -234,19 +352,28 @@ export default function AssignmentsSection({ profile }: Props) {
               <div>
                 <h3 className="font-bold text-gray-800 text-lg">Submit Assignment</h3>
                 <p className="text-xs text-gray-500 mt-0.5">{submitTarget.title}</p>
+                {submitTarget.max_score && (
+                  <p className="text-xs text-gray-400">Max score: {submitTarget.max_score}</p>
+                )}
               </div>
               <button onClick={() => setSubmitTarget(null)} className="p-1.5 hover:bg-gray-100 rounded-lg">
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
             <div className="p-5 space-y-3">
+              {submitTarget.description && (
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                  <p className="text-xs font-medium text-gray-500 mb-1">Assignment instructions:</p>
+                  <p className="text-sm text-gray-700">{submitTarget.description}</p>
+                </div>
+              )}
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Your Answer / Work</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Your Answer / Work *</label>
                 <textarea
-                  rows={5}
+                  rows={6}
                   value={submitContent}
                   onChange={e => setSubmitContent(e.target.value)}
-                  placeholder="Type your answer or describe your work here..."
+                  placeholder="Type your answer, explanation or work here…"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none"
                 />
               </div>
@@ -255,17 +382,21 @@ export default function AssignmentsSection({ profile }: Props) {
                 <input
                   value={submitUrl}
                   onChange={e => setSubmitUrl(e.target.value)}
-                  placeholder="https://drive.google.com/..."
+                  placeholder="https://drive.google.com/…"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500"
                 />
+                <p className="text-xs text-gray-400 mt-1">You can paste a Google Drive, Dropbox or any file link</p>
               </div>
             </div>
             <div className="flex gap-3 p-5 border-t border-gray-100">
               <button onClick={() => setSubmitTarget(null)} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button onClick={submitAssignment} disabled={submitting}
-                className="flex-1 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700 disabled:opacity-50 flex items-center justify-center gap-2">
+              <button
+                onClick={submitAssignment}
+                disabled={submitting}
+                className="flex-1 py-2.5 bg-pink-600 text-white rounded-xl text-sm font-medium hover:bg-pink-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
                 <Send className="w-4 h-4" />
-                {submitting ? 'Submitting...' : 'Submit'}
+                {submitting ? 'Submitting…' : 'Submit'}
               </button>
             </div>
           </div>

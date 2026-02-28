@@ -21,7 +21,7 @@ export default function TeacherTimetableSection({ profile }: Props) {
   const [teacherId, setTeacherId] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.from('teachers').select('id').eq('profile_id', profile.id).single().then(({ data }) => {
+    supabase.from('teachers').select('id').eq('profile_id', profile.id).maybeSingle().then(({ data }) => {
       if (data) { setTeacherId(data.id); fetchSlots(data.id); }
       else setLoading(false);
     });

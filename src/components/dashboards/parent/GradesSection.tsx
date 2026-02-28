@@ -110,7 +110,7 @@ export default function ParentGradesSection({ profile }: Props) {
   const [loadingResult, setLoadingResult] = useState(false);
 
   useEffect(() => {
-    supabase.from('parents').select('id').eq('profile_id', profile.id).single().then(({ data: parent }) => {
+    supabase.from('parents').select('id').eq('profile_id', profile.id).maybeSingle().then(({ data: parent }) => {
       if (!parent) { setLoading(false); return; }
       supabase
         .from('student_parents')

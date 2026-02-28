@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Edit2, Trash2, X, Search, Users, BookOpen, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Search, Users, BookOpen, TrendingUp, AlertTriangle, ArrowUpCircle, CheckSquare, Square } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { getDefaultAcademicYear } from '../../../lib/academicConfig';
 import type { ProfileRow, ClassRow, ClassInsert, ClassLevel } from '../../../lib/supabase';
@@ -59,6 +59,14 @@ export default function ClassesSection({ profile: _profile }: Props) {
   const [rosterClass, setRosterClass] = useState<ClassWithProfile | null>(null);
   const [roster, setRoster] = useState<StudentInClass[]>([]);
   const [rosterLoading, setRosterLoading] = useState(false);
+
+  // Promote state
+  const [promoteClass, setPromoteClass] = useState<ClassWithProfile | null>(null);
+  const [promoteStudents, setPromoteStudents] = useState<StudentInClass[]>([]);
+  const [promoteStudentsLoading, setPromoteStudentsLoading] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [targetClassId, setTargetClassId] = useState('');
+  const [promoting, setPromoting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -142,6 +150,53 @@ export default function ClassesSection({ profile: _profile }: Props) {
       setToast({ msg: e instanceof Error ? e.message : 'Failed to save', type: 'error' });
     }
     setSaving(false);
+  };
+
+  const openPromote = async (c: ClassWithProfile) => {
+    setPromoteClass(c);
+    setTargetClassId('');
+    setPromoteStudents([]);
+    setSelectedStudentIds(new Set());
+    setPromoteStudentsLoading(true);
+    const { data } = await supabase
+      .from('students')
+      .select('id, student_id, gender, profiles:profile_id(first_name, last_name)')
+      .eq('class_id', c.id)
+      .eq('is_active', true)
+      .order('student_id');
+    const list = (data || []) as unknown as StudentInClass[];
+    setPromoteStudents(list);
+    setSelectedStudentIds(new Set(list.map(s => s.id)));
+    setPromoteStudentsLoading(false);
+  };
+
+  const doPromotion = async () => {
+    if (!promoteClass || !targetClassId) return;
+    setPromoting(true);
+    try {
+      const ids = Array.from(selectedStudentIds);
+      const { data, error } = await supabase.rpc('promote_students', {
+        p_from_class_id: promoteClass.id,
+        p_to_class_id: targetClassId,
+        p_student_ids: ids.length < promoteStudents.length ? ids : null,
+      });
+      if (error) throw error;
+      const count = data as number;
+      setToast({ msg: `${count} student${count !== 1 ? 's' : ''} promoted successfully`, type: 'success' });
+      setPromoteClass(null);
+      fetchData();
+    } catch (e: unknown) {
+      setToast({ msg: e instanceof Error ? e.message : 'Promotion failed', type: 'error' });
+    }
+    setPromoting(false);
+  };
+
+  const toggleStudent = (id: string) => {
+    setSelectedStudentIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   };
 
   const deleteClass = async () => {
@@ -243,6 +298,9 @@ export default function ClassesSection({ profile: _profile }: Props) {
                           <button onClick={() => openRoster(c)} className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-500" title="View Roster">
                             <Users className="w-4 h-4" />
                           </button>
+                          <button onClick={() => openPromote(c)} className="p-1.5 hover:bg-green-50 rounded-lg text-green-600" title="Promote Students">
+                            <ArrowUpCircle className="w-4 h-4" />
+                          </button>
                           <button onClick={() => openEdit(c)} className="p-1.5 hover:bg-violet-50 rounded-lg text-violet-500" title="Edit">
                             <Edit2 className="w-4 h-4" />
                           </button>
@@ -326,6 +384,103 @@ export default function ClassesSection({ profile: _profile }: Props) {
               <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
               <button onClick={deleteClass} disabled={deleting} className="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
                 {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Promote Students modal */}
+      {promoteClass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b flex-shrink-0">
+              <div>
+                <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                  <ArrowUpCircle className="w-5 h-5 text-green-600" /> Promote Students
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">From: <span className="font-semibold">{promoteClass.name}</span></p>
+              </div>
+              <button onClick={() => setPromoteClass(null)} className="p-1.5 hover:bg-gray-100 rounded-lg">
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-5 border-b flex-shrink-0">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">Promote to class *</label>
+              <select
+                value={targetClassId}
+                onChange={e => setTargetClassId(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="">Select destination class…</option>
+                {classes
+                  .filter(c => c.id !== promoteClass.id)
+                  .map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({LEVEL_LABELS[c.level]}) — {c.academic_year}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-gray-700">
+                  Select students to promote ({selectedStudentIds.size} of {promoteStudents.length} selected)
+                </p>
+                <button
+                  onClick={() => {
+                    if (selectedStudentIds.size === promoteStudents.length) {
+                      setSelectedStudentIds(new Set());
+                    } else {
+                      setSelectedStudentIds(new Set(promoteStudents.map(s => s.id)));
+                    }
+                  }}
+                  className="text-xs text-green-600 hover:underline font-medium"
+                >
+                  {selectedStudentIds.size === promoteStudents.length ? 'Deselect all' : 'Select all'}
+                </button>
+              </div>
+
+              {promoteStudentsLoading ? (
+                <div className="text-center py-8 text-gray-400 text-sm">Loading students…</div>
+              ) : promoteStudents.length === 0 ? (
+                <div className="text-center py-8 text-gray-400 text-sm">No active students in this class</div>
+              ) : (
+                <div className="space-y-1.5">
+                  {promoteStudents.map(s => {
+                    const checked = selectedStudentIds.has(s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        onClick={() => toggleStudent(s.id)}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-colors ${checked ? 'border-green-200 bg-green-50' : 'border-gray-100 hover:bg-gray-50'}`}
+                      >
+                        {checked
+                          ? <CheckSquare className="w-4 h-4 text-green-600 flex-shrink-0" />
+                          : <Square className="w-4 h-4 text-gray-300 flex-shrink-0" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-800">{s.profiles?.first_name} {s.profiles?.last_name}</p>
+                          <p className="text-xs text-gray-400 font-mono">{s.student_id}</p>
+                        </div>
+                        <span className="text-xs text-gray-400 capitalize flex-shrink-0">{s.gender || '—'}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 p-5 border-t flex-shrink-0">
+              <button onClick={() => setPromoteClass(null)} className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+              <button
+                onClick={doPromotion}
+                disabled={promoting || !targetClassId || selectedStudentIds.size === 0}
+                className="flex-1 py-2.5 bg-green-600 text-white rounded-xl text-sm font-medium hover:bg-green-700 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <ArrowUpCircle className="w-4 h-4" />
+                {promoting ? 'Promoting…' : `Promote ${selectedStudentIds.size} student${selectedStudentIds.size !== 1 ? 's' : ''}`}
               </button>
             </div>
           </div>

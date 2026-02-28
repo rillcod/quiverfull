@@ -28,7 +28,7 @@ export default function ParentAttendanceSection({ profile }: Props) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    supabase.from('parents').select('id').eq('profile_id', profile.id).single().then(({ data: parent }) => {
+    supabase.from('parents').select('id').eq('profile_id', profile.id).maybeSingle().then(({ data: parent }) => {
       if (!parent) { setLoading(false); return; }
       supabase.from('student_parents')
         .select('students:student_id(id, student_id, profiles:profile_id(first_name, last_name), classes:class_id(name))')
