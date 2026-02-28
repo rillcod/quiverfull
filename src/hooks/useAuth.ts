@@ -67,11 +67,12 @@ export function useAuth() {
     }
   };
 
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('Error signing out:', error);
-    }
+  const signOut = () => {
+    // Clear state immediately so the UI transitions without waiting for the network
+    setUser(null);
+    setProfile(null);
+    // Fire-and-forget — invalidates the session on the server in the background
+    supabase.auth.signOut().catch(e => console.error('Error signing out:', e));
   };
 
   return {
