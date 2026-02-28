@@ -85,8 +85,9 @@ function RecordsTab({
         String(g.score), String(g.max_score), label, g.term, g.academic_year,
       ]);
     });
+    const q = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
     const a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.map(r => r.join(',')).join('\n'));
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.map(r => r.map(q).join(',')).join('\n'));
     a.download = 'grades.csv'; a.click();
   };
 

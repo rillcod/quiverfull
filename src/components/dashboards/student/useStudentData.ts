@@ -19,6 +19,7 @@ export function useStudentData(profileId: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
     setLoading(true);
     setError(null);
     (async () => {
@@ -27,6 +28,7 @@ export function useStudentData(profileId: string) {
         .select('*, profiles:profile_id(first_name,last_name,email,phone), classes:class_id(name,level)')
         .eq('profile_id', profileId)
         .maybeSingle();
+      if (!mounted) return;
       if (err) {
         setError(err.message);
         setLoading(false);
@@ -39,6 +41,7 @@ export function useStudentData(profileId: string) {
           supabase.from('attendance').select('*').eq('student_id', s.id).order('date', { ascending: false }).limit(30),
           supabase.from('submissions').select('*, assignments:assignment_id(title,description,due_date,max_score,type, courses:course_id(title,subject))').eq('student_id', s.id).order('submitted_at', { ascending: false }),
         ]);
+        if (!mounted) return;
         setGrades((g || []) as GradeRow[]);
         setAttendance((a || []) as AttendanceRow[]);
         setAssignments((asn || []) as SubmissionWithAssignment[]);
@@ -47,6 +50,7 @@ export function useStudentData(profileId: string) {
       }
       setLoading(false);
     })();
+    return () => { mounted = false; };
   }, [profileId]);
 
   return { student, grades, attendance, assignments, loading, error };

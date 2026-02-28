@@ -133,8 +133,9 @@ export default function FeesSection({ profile: _profile }: Props) {
       f.fee_type, String(f.amount), String(f.paid_amount ?? 0),
       String(f.amount - (f.paid_amount ?? 0)), f.due_date, f.status,
     ]));
+    const q = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
     const a = document.createElement('a');
-    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.map(r => r.join(',')).join('\n'));
+    a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(rows.map(r => r.map(q).join(',')).join('\n'));
     a.download = 'fees.csv'; a.click();
   };
 

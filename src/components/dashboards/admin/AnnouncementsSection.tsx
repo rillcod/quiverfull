@@ -44,7 +44,7 @@ export default function AnnouncementsSection({ profile }: Props) {
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('announcements').select('*').order('created_at', { ascending: false }).limit(200);
     setItems((data || []) as AnnouncementRow[]);
     setLoading(false);
   }, []);

@@ -184,7 +184,8 @@ export default function StudentsSection({ profile: _profile }: Props) {
   const exportCSV = () => {
     const rows: string[][] = [['Student ID', 'First Name', 'Last Name', 'Email', 'Class', 'Gender', 'Status', 'Enrollment Date']];
     filtered.forEach(s => rows.push([s.student_id, s.profiles?.first_name ?? '', s.profiles?.last_name ?? '', s.profiles?.email ?? '', s.classes?.name ?? '', s.gender ?? '', s.is_active ? 'Active' : 'Inactive', s.enrollment_date ?? '']));
-    const csv = rows.map(r => r.join(',')).join('\n');
+    const q = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+    const csv = rows.map(r => r.map(q).join(',')).join('\n');
     const a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
     a.download = 'students.csv'; a.click();
   };

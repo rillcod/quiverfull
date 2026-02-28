@@ -40,7 +40,7 @@ export default function HealthRecordsSection({ profile }: Props) {
     setLoading(true);
     const { data } = await supabase.from('health_records')
       .select('*, students:student_id(student_id, profiles:profile_id(first_name, last_name))')
-      .order('date_recorded', { ascending: false });
+      .order('date_recorded', { ascending: false }).limit(500);
     setRecords((data || []) as HealthWithStudent[]);
     const { data: studs } = await supabase.from('students').select('id, student_id, profiles:profile_id(first_name, last_name)').eq('is_active', true);
     setStudents((studs || []) as { id: string; student_id: string; profiles: { first_name: string; last_name: string } | null }[]);
