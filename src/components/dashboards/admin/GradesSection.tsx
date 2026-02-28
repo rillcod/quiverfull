@@ -338,17 +338,20 @@ function BulkEntryTab({ profile, classes, onRefresh, onToast }: {
   const loadStudents = useCallback(async () => {
     if (!classId) { setRows([]); return; }
     setLoadingStudents(true);
-    const { data } = await supabase
-      .from('students')
-      .select('id, student_id, profiles:profile_id(first_name, last_name)')
-      .eq('class_id', classId).eq('is_active', true).order('student_id');
-    setRows((data || []).map((s: { id: string; student_id: string; profiles: { first_name: string; last_name: string } | null }) => ({
-      studentId: s.id,
-      displayId: s.student_id,
-      name: `${s.profiles?.first_name ?? ''} ${s.profiles?.last_name ?? ''}`.trim(),
-      score: '',
-    })));
-    setLoadingStudents(false);
+    try {
+      const { data } = await supabase
+        .from('students')
+        .select('id, student_id, profiles:profile_id(first_name, last_name)')
+        .eq('class_id', classId).eq('is_active', true).order('student_id');
+      setRows((data || []).map((s: { id: string; student_id: string; profiles: { first_name: string; last_name: string } | null }) => ({
+        studentId: s.id,
+        displayId: s.student_id,
+        name: `${s.profiles?.first_name ?? ''} ${s.profiles?.last_name ?? ''}`.trim(),
+        score: '',
+      })));
+    } finally {
+      setLoadingStudents(false);
+    }
   }, [classId]);
 
   useEffect(() => { loadStudents(); }, [loadStudents]);
@@ -509,67 +512,69 @@ function ClassSummaryTab({ classes }: { classes: Pick<ClassRow, 'id' | 'name'>[]
   const load = useCallback(async () => {
     if (!classId) return;
     setLoading(true);
+    try {
+      const { data: studentData } = await supabase
+        .from('students')
+        .select('id, student_id, profiles:profile_id(first_name, last_name)')
+        .eq('class_id', classId).eq('is_active', true);
 
-    const { data: studentData } = await supabase
-      .from('students')
-      .select('id, student_id, profiles:profile_id(first_name, last_name)')
-      .eq('class_id', classId).eq('is_active', true);
+      const studentIds = (studentData || []).map((s: { id: string }) => s.id);
+      const nameMap: Record<string, string> = {};
+      const idMap: Record<string, string> = {};
+      (studentData || []).forEach((s: { id: string; student_id: string; profiles: { first_name: string; last_name: string } | null }) => {
+        nameMap[s.id] = `${s.profiles?.first_name ?? ''} ${s.profiles?.last_name ?? ''}`.trim();
+        idMap[s.id] = s.student_id;
+      });
 
-    const studentIds = (studentData || []).map((s: { id: string }) => s.id);
-    const nameMap: Record<string, string> = {};
-    const idMap: Record<string, string> = {};
-    (studentData || []).forEach((s: { id: string; student_id: string; profiles: { first_name: string; last_name: string } | null }) => {
-      nameMap[s.id] = `${s.profiles?.first_name ?? ''} ${s.profiles?.last_name ?? ''}`.trim();
-      idMap[s.id] = s.student_id;
-    });
+      if (studentIds.length === 0) {
+        setSubjectStats([]); setStudentStats([]); return;
+      }
 
-    if (studentIds.length === 0) {
-      setSubjectStats([]); setStudentStats([]); setLoading(false); return;
+      const { data: gradeData } = await supabase
+        .from('grades')
+        .select('student_id, subject, score, max_score')
+        .in('student_id', studentIds)
+        .eq('term', term).eq('academic_year', academicYear);
+
+      const grades = (gradeData || []) as { student_id: string; subject: string; score: number; max_score: number }[];
+
+      // Subject aggregation
+      const bySub: Record<string, number[]> = {};
+      grades.forEach(g => {
+        const pct = g.max_score > 0 ? (g.score / g.max_score) * 100 : 0;
+        if (!bySub[g.subject]) bySub[g.subject] = [];
+        bySub[g.subject].push(pct);
+      });
+      const sStats = Object.entries(bySub).map(([subject, vals]) => ({
+        subject,
+        avg: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10,
+        count: vals.length,
+        high: Math.round(Math.max(...vals) * 10) / 10,
+        low: Math.round(Math.min(...vals) * 10) / 10,
+      })).sort((a, b) => b.avg - a.avg);
+      setSubjectStats(sStats);
+
+      // Student aggregation
+      const byStud: Record<string, { total: number; count: number }> = {};
+      grades.forEach(g => {
+        const pct = g.max_score > 0 ? (g.score / g.max_score) * 100 : 0;
+        if (!byStud[g.student_id]) byStud[g.student_id] = { total: 0, count: 0 };
+        byStud[g.student_id].total += pct;
+        byStud[g.student_id].count += 1;
+      });
+      const stStats = (studentData || []).map((s: { id: string }) => {
+        const agg = byStud[s.id];
+        return {
+          name: nameMap[s.id],
+          studentId: idMap[s.id],
+          avg: agg ? Math.round((agg.total / agg.count) * 10) / 10 : 0,
+          count: agg ? agg.count : 0,
+        };
+      }).sort((a: StudentStat, b: StudentStat) => b.avg - a.avg);
+      setStudentStats(stStats);
+    } finally {
+      setLoading(false);
     }
-
-    const { data: gradeData } = await supabase
-      .from('grades')
-      .select('student_id, subject, score, max_score')
-      .in('student_id', studentIds)
-      .eq('term', term).eq('academic_year', academicYear);
-
-    const grades = (gradeData || []) as { student_id: string; subject: string; score: number; max_score: number }[];
-
-    // Subject aggregation
-    const bySub: Record<string, number[]> = {};
-    grades.forEach(g => {
-      const pct = g.max_score > 0 ? (g.score / g.max_score) * 100 : 0;
-      if (!bySub[g.subject]) bySub[g.subject] = [];
-      bySub[g.subject].push(pct);
-    });
-    const sStats = Object.entries(bySub).map(([subject, vals]) => ({
-      subject,
-      avg: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 10) / 10,
-      count: vals.length,
-      high: Math.round(Math.max(...vals) * 10) / 10,
-      low: Math.round(Math.min(...vals) * 10) / 10,
-    })).sort((a, b) => b.avg - a.avg);
-    setSubjectStats(sStats);
-
-    // Student aggregation
-    const byStud: Record<string, { total: number; count: number }> = {};
-    grades.forEach(g => {
-      const pct = g.max_score > 0 ? (g.score / g.max_score) * 100 : 0;
-      if (!byStud[g.student_id]) byStud[g.student_id] = { total: 0, count: 0 };
-      byStud[g.student_id].total += pct;
-      byStud[g.student_id].count += 1;
-    });
-    const stStats = (studentData || []).map((s: { id: string }) => {
-      const agg = byStud[s.id];
-      return {
-        name: nameMap[s.id],
-        studentId: idMap[s.id],
-        avg: agg ? Math.round((agg.total / agg.count) * 10) / 10 : 0,
-        count: agg ? agg.count : 0,
-      };
-    }).sort((a: StudentStat, b: StudentStat) => b.avg - a.avg);
-    setStudentStats(stStats);
-    setLoading(false);
   }, [classId, term, academicYear]);
 
   useEffect(() => { load(); }, [load]);
@@ -761,13 +766,16 @@ export default function GradesSection({ profile }: Props) {
 
   const fetchGrades = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('grades')
-      .select('*, students:student_id(student_id, profiles:profile_id(first_name, last_name), classes:class_id(id, name))')
-      .order('created_at', { ascending: false })
-      .limit(300);
-    setGrades((data || []) as GradeWithStudent[]);
-    setLoading(false);
+    try {
+      const { data } = await supabase
+        .from('grades')
+        .select('*, students:student_id(student_id, profiles:profile_id(first_name, last_name), classes:class_id(id, name))')
+        .order('created_at', { ascending: false })
+        .limit(300);
+      setGrades((data || []) as GradeWithStudent[]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { fetchGrades(); }, [fetchGrades]);

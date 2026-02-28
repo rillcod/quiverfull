@@ -34,36 +34,39 @@ export default function OverviewSection({ profile, onNavigate }: Props) {
 
   useEffect(() => {
     (async () => {
-      const { data: parent } = await supabase.from('parents').select('id').eq('profile_id', profile.id).maybeSingle();
-      if (!parent) { setLoading(false); return; }
-      const { data: links } = await supabase.from('student_parents').select('student_id').eq('parent_id', parent.id);
-      const ids = (links || []).map((l: StudentParentLink) => l.student_id);
-      const [{ data: children }, { data: fees }, { data: att }, { data: ann }] = await Promise.all([
-        ids.length > 0
-          ? supabase.from('students').select('id,student_id,profiles:profile_id(first_name,last_name),classes:class_id(name,level)').in('id', ids)
-          : Promise.resolve({ data: [] }),
-        ids.length > 0
-          ? supabase.from('fees').select('amount,paid_amount,status').in('student_id', ids).in('status', ['pending', 'partial', 'overdue'])
-          : Promise.resolve({ data: [] }),
-        ids.length > 0
-          ? supabase.from('attendance').select('status').in('student_id', ids).gte('date', new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0])
-          : Promise.resolve({ data: [] }),
-        supabase.from('announcements').select('id,title,content,created_at,priority').eq('published', true).order('created_at', { ascending: false }).limit(5),
-      ]);
-      const feeRows = (fees || []) as Pick<FeeRow, 'amount' | 'paid_amount' | 'status'>[];
-      const pendingTotal = feeRows.reduce((s, f) => s + ((f.amount ?? 0) - (f.paid_amount ?? 0)), 0);
-      const attRows = (att || []) as Pick<AttendanceRow, 'status'>[];
-      const presentCount = attRows.filter(a => a.status === 'present').length;
-      const attendanceRate = attRows.length ? Math.round((presentCount / attRows.length) * 100) : 0;
-      setData({
-        children: (children || []) as StudentWithProfileAndClass[],
-        pendingTotal,
-        announcements: (ann || []) as Pick<AnnouncementRow, 'id' | 'title' | 'content' | 'created_at' | 'priority'>[],
-        attendanceRate,
-        presentCount,
-        totalDays: attRows.length,
-      });
-      setLoading(false);
+      try {
+        const { data: parent } = await supabase.from('parents').select('id').eq('profile_id', profile.id).maybeSingle();
+        if (!parent) return;
+        const { data: links } = await supabase.from('student_parents').select('student_id').eq('parent_id', parent.id);
+        const ids = (links || []).map((l: StudentParentLink) => l.student_id);
+        const [{ data: children }, { data: fees }, { data: att }, { data: ann }] = await Promise.all([
+          ids.length > 0
+            ? supabase.from('students').select('id,student_id,profiles:profile_id(first_name,last_name),classes:class_id(name,level)').in('id', ids)
+            : Promise.resolve({ data: [] }),
+          ids.length > 0
+            ? supabase.from('fees').select('amount,paid_amount,status').in('student_id', ids).in('status', ['pending', 'partial', 'overdue'])
+            : Promise.resolve({ data: [] }),
+          ids.length > 0
+            ? supabase.from('attendance').select('status').in('student_id', ids).gte('date', new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0])
+            : Promise.resolve({ data: [] }),
+          supabase.from('announcements').select('id,title,content,created_at,priority').eq('published', true).order('created_at', { ascending: false }).limit(5),
+        ]);
+        const feeRows = (fees || []) as Pick<FeeRow, 'amount' | 'paid_amount' | 'status'>[];
+        const pendingTotal = feeRows.reduce((s, f) => s + ((f.amount ?? 0) - (f.paid_amount ?? 0)), 0);
+        const attRows = (att || []) as Pick<AttendanceRow, 'status'>[];
+        const presentCount = attRows.filter(a => a.status === 'present').length;
+        const attendanceRate = attRows.length ? Math.round((presentCount / attRows.length) * 100) : 0;
+        setData({
+          children: (children || []) as StudentWithProfileAndClass[],
+          pendingTotal,
+          announcements: (ann || []) as Pick<AnnouncementRow, 'id' | 'title' | 'content' | 'created_at' | 'priority'>[],
+          attendanceRate,
+          presentCount,
+          totalDays: attRows.length,
+        });
+      } finally {
+        setLoading(false);
+      }
     })();
   }, [profile.id]);
 

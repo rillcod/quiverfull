@@ -58,6 +58,7 @@ export default function FeesSection({ profile: _profile }: Props) {
   const [applyTarget, setApplyTarget] = useState<FeeTemplateRow | null>(null);
   const [applyDueDate, setApplyDueDate] = useState('');
   const [applying, setApplying] = useState(false);
+  const [deleteTemplateTarget, setDeleteTemplateTarget] = useState<FeeTemplateRow | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -183,11 +184,12 @@ export default function FeesSection({ profile: _profile }: Props) {
     setSaving(false);
   };
 
-  const deleteTemplate = async (t: FeeTemplateRow) => {
-    if (!confirm(`Delete template "${t.name}"?`)) return;
-    const { error } = await supabase.from('fee_templates').delete().eq('id', t.id);
+  const deleteTemplate = async () => {
+    if (!deleteTemplateTarget) return;
+    const { error } = await supabase.from('fee_templates').delete().eq('id', deleteTemplateTarget.id);
     if (error) setToast({ msg: error.message, type: 'error' });
     else { setToast({ msg: 'Template deleted', type: 'success' }); fetchData(); }
+    setDeleteTemplateTarget(null);
   };
 
   // Apply template: bulk-insert fee records
@@ -347,7 +349,15 @@ export default function FeesSection({ profile: _profile }: Props) {
                           <button onClick={() => { setApplyTarget(t); setApplyDueDate(''); }} className="flex items-center gap-1 px-2 py-1 bg-emerald-600 text-white rounded-lg text-xs font-medium hover:bg-emerald-700" title="Apply to students">
                             <Zap className="w-3.5 h-3.5" /> Apply
                           </button>
-                          <button onClick={() => deleteTemplate(t)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                          {deleteTemplateTarget?.id === t.id ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-red-600 font-medium">Sure?</span>
+                              <button onClick={deleteTemplate} className="px-2 py-0.5 bg-red-600 text-white rounded text-xs font-medium">Yes</button>
+                              <button onClick={() => setDeleteTemplateTarget(null)} className="px-2 py-0.5 border border-gray-200 rounded text-xs">No</button>
+                            </div>
+                          ) : (
+                            <button onClick={() => setDeleteTemplateTarget(t)} className="p-1.5 hover:bg-red-50 rounded-lg text-red-500" title="Delete"><Trash2 className="w-4 h-4" /></button>
+                          )}
                         </td>
                       </tr>
                     );
