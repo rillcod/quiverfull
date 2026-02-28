@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, X } from 'lucide-react';
+import { Save, X, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { ProfileRow, UserRole } from '../../../lib/supabase';
 
@@ -35,6 +35,12 @@ export default function ProfileEditSection({ profile }: Props) {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
 
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+
   const save = async () => {
     if (!firstName.trim() || !lastName.trim()) {
       return setToast({ msg: 'First name and last name are required', type: 'error' });
@@ -56,6 +62,22 @@ export default function ProfileEditSection({ profile }: Props) {
       setToast({ msg: e instanceof Error ? e.message : 'Failed to save', type: 'error' });
     }
     setSaving(false);
+  };
+
+  const changePassword = async () => {
+    if (newPw.length < 8) return setToast({ msg: 'Password must be at least 8 characters', type: 'error' });
+    if (newPw !== confirmPw) return setToast({ msg: 'Passwords do not match', type: 'error' });
+    setPwSaving(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPw });
+      if (error) throw error;
+      setNewPw('');
+      setConfirmPw('');
+      setToast({ msg: 'Password changed successfully', type: 'success' });
+    } catch (e: unknown) {
+      setToast({ msg: e instanceof Error ? e.message : 'Failed to change password', type: 'error' });
+    }
+    setPwSaving(false);
   };
 
   const gradientClass = ROLE_GRADIENT[profile.role] || 'from-gray-400 to-gray-600';
@@ -128,6 +150,54 @@ export default function ProfileEditSection({ profile }: Props) {
           >
             <Save className="w-4 h-4" />
             {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+
+      {/* Change Password */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center gap-2 mb-5">
+          <KeyRound className="w-5 h-5 text-gray-500" />
+          <h3 className="font-semibold text-gray-800">Change Password</h3>
+        </div>
+        <div className="space-y-3 max-w-md">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">New Password *</label>
+            <div className="relative">
+              <input
+                type={showNewPw ? 'text' : 'password'}
+                value={newPw}
+                onChange={e => setNewPw(e.target.value)}
+                placeholder="Minimum 8 characters"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button type="button" onClick={() => setShowNewPw(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Confirm Password *</label>
+            <div className="relative">
+              <input
+                type={showConfirmPw ? 'text' : 'password'}
+                value={confirmPw}
+                onChange={e => setConfirmPw(e.target.value)}
+                placeholder="Re-enter new password"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button type="button" onClick={() => setShowConfirmPw(v => !v)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                {showConfirmPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={changePassword}
+            disabled={pwSaving || !newPw || !confirmPw}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+          >
+            <KeyRound className="w-4 h-4" />
+            {pwSaving ? 'Changing...' : 'Change Password'}
           </button>
         </div>
       </div>

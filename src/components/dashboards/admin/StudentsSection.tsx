@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Edit2, ToggleLeft, ToggleRight, Download, X, ChevronLeft, ChevronRight, Copy, Check } from 'lucide-react';
+import { Search, Plus, Eye, Edit2, ToggleLeft, ToggleRight, Download, X, ChevronLeft, ChevronRight, Copy, Check, KeyRound } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { ProfileRow, StudentRow, ClassRow, ClassLevel, StudentGender } from '../../../lib/supabase';
 
 interface StudentWithRelations extends StudentRow {
-  profiles: Pick<ProfileRow, 'id' | 'first_name' | 'last_name' | 'email' | 'phone'> | null;
+  profiles: Pick<ProfileRow, 'id' | 'first_name' | 'last_name' | 'email' | 'phone' | 'user_id'> | null;
   classes: Pick<ClassRow, 'name' | 'level'> | null;
 }
 
@@ -80,13 +80,15 @@ export default function StudentsSection({ profile: _profile }: Props) {
 
   const [form, setForm] = useState<StudentForm>(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [credentialsModal, setCredentialsModal] = useState<{ email: string; password: string } | null>(null);
+  const [credentialsModal, setCredentialsModal] = useState<{ email: string; password: string; title?: string } | null>(null);
   const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
+  const [resetTarget, setResetTarget] = useState<StudentWithRelations | null>(null);
+  const [resetSaving, setResetSaving] = useState(false);
 
   const fetchStudents = async () => {
     setLoading(true);
     const { data } = await supabase.from('students')
-      .select('*, profiles:profile_id(id, first_name, last_name, email, phone), classes:class_id(name, level)')
+      .select('*, profiles:profile_id(id, first_name, last_name, email, phone, user_id), classes:class_id(name, level)')
       .order('created_at', { ascending: false });
     setStudents(data || []);
     setLoading(false);
@@ -202,6 +204,26 @@ export default function StudentsSection({ profile: _profile }: Props) {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  const resetPassword = async () => {
+    if (!resetTarget?.profiles?.user_id) return;
+    setResetSaving(true);
+    try {
+      const newPassword = generateTempPassword();
+      const { error } = await supabase.rpc('admin_reset_password', {
+        target_user_id: resetTarget.profiles.user_id,
+        new_password: newPassword,
+      });
+      if (error) throw error;
+      const name = `${resetTarget.profiles.first_name} ${resetTarget.profiles.last_name}`;
+      const email = resetTarget.profiles.email;
+      setResetTarget(null);
+      setCredentialsModal({ email, password: newPassword, title: `New password for ${name}` });
+    } catch (e: unknown) {
+      setToast({ msg: (e as { message?: string })?.message || 'Password reset failed', type: 'error' });
+    }
+    setResetSaving(false);
+  };
+
   return (
     <div className="space-y-5">
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
@@ -270,6 +292,7 @@ export default function StudentsSection({ profile: _profile }: Props) {
                         <div className="flex items-center gap-1">
                           <button onClick={() => setViewStudent(s)} className="p-1.5 hover:bg-blue-50 rounded-lg text-blue-500" title="View"><Eye className="w-4 h-4" /></button>
                           <button onClick={() => openEdit(s)} className="p-1.5 hover:bg-yellow-50 rounded-lg text-yellow-500" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => setResetTarget(s)} className="p-1.5 hover:bg-purple-50 rounded-lg text-purple-500" title="Reset Password"><KeyRound className="w-4 h-4" /></button>
                           <button onClick={() => toggleActive(s)} className={`p-1.5 rounded-lg ${s.is_active ? 'hover:bg-red-50 text-red-500' : 'hover:bg-green-50 text-green-500'}`} title={s.is_active ? 'Deactivate' : 'Activate'}>
                             {s.is_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
                           </button>

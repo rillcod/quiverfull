@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, Eye, Edit2, ToggleLeft, ToggleRight, Download, X, ChevronLeft, ChevronRight, Copy, Check } from 'lucide-react';
+import { Search, Plus, Eye, Edit2, ToggleLeft, ToggleRight, Download, X, ChevronLeft, ChevronRight, Copy, Check, KeyRound } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { ProfileRow, TeacherRow } from '../../../lib/supabase';
 
 interface TeacherWithRelations extends TeacherRow {
-  profiles: Pick<ProfileRow, 'id' | 'first_name' | 'last_name' | 'email' | 'phone'> | null;
+  profiles: Pick<ProfileRow, 'id' | 'first_name' | 'last_name' | 'email' | 'phone' | 'user_id'> | null;
 }
 
 interface TeacherForm {
@@ -72,13 +72,15 @@ export default function TeachersSection({ profile }: Props) {
 
   const [form, setForm] = useState<TeacherForm>(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [credentialsModal, setCredentialsModal] = useState<{ email: string; password: string } | null>(null);
+  const [credentialsModal, setCredentialsModal] = useState<{ email: string; password: string; title?: string } | null>(null);
   const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
+  const [resetTarget, setResetTarget] = useState<TeacherWithRelations | null>(null);
+  const [resetSaving, setResetSaving] = useState(false);
 
   const fetchTeachers = async () => {
     setLoading(true);
     const { data } = await supabase.from('teachers')
-      .select('*, profiles:profile_id(id, first_name, last_name, email, phone)')
+      .select('*, profiles:profile_id(id, first_name, last_name, email, phone, user_id)')
       .order('created_at', { ascending: false });
     setTeachers(data || []);
     setLoading(false);
@@ -185,6 +187,26 @@ export default function TeachersSection({ profile }: Props) {
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  const resetPassword = async () => {
+    if (!resetTarget?.profiles?.user_id) return;
+    setResetSaving(true);
+    try {
+      const newPassword = generateTempPassword();
+      const { error } = await supabase.rpc('admin_reset_password', {
+        target_user_id: resetTarget.profiles.user_id,
+        new_password: newPassword,
+      });
+      if (error) throw error;
+      const name = `${resetTarget.profiles.first_name} ${resetTarget.profiles.last_name}`;
+      const email = resetTarget.profiles.email;
+      setResetTarget(null);
+      setCredentialsModal({ email, password: newPassword, title: `New password for ${name}` });
+    } catch (e: unknown) {
+      setToast({ msg: (e as { message?: string })?.message || 'Password reset failed', type: 'error' });
+    }
+    setResetSaving(false);
+  };
+
   return (
     <div className="space-y-5">
       {toast && <Toast msg={toast.msg} type={toast.type} onClose={() => setToast(null)} />}
@@ -235,6 +257,7 @@ export default function TeachersSection({ profile }: Props) {
                         <div className="flex items-center gap-1">
                           <button onClick={() => setViewTeacher(t)} className="p-1.5 hover:bg-green-50 rounded-lg text-green-500" title="View"><Eye className="w-4 h-4" /></button>
                           <button onClick={() => openEdit(t)} className="p-1.5 hover:bg-yellow-50 rounded-lg text-yellow-500" title="Edit"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => setResetTarget(t)} className="p-1.5 hover:bg-purple-50 rounded-lg text-purple-500" title="Reset Password"><KeyRound className="w-4 h-4" /></button>
                           <button onClick={() => toggleActive(t)} className={`p-1.5 rounded-lg ${t.is_active ? 'hover:bg-red-50 text-red-500' : 'hover:bg-green-50 text-green-500'}`} title={t.is_active ? 'Deactivate' : 'Activate'}>
                             {t.is_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
                           </button>
@@ -287,11 +310,23 @@ export default function TeachersSection({ profile }: Props) {
           </div>
         </div>
       )}
+      {resetTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setResetTarget(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="font-bold text-gray-800 text-lg mb-2">Reset Password</h3>
+            <p className="text-sm text-gray-600 mb-5">Generate a new temporary password for <span className="font-semibold">{resetTarget.profiles?.first_name} {resetTarget.profiles?.last_name}</span>? Share it with them so they can log in.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setResetTarget(null)} className="flex-1 py-2 border border-gray-300 rounded-lg text-sm text-gray-700">Cancel</button>
+              <button onClick={resetPassword} disabled={resetSaving} className="flex-1 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50">{resetSaving ? 'Resetting...' : 'Reset Password'}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {credentialsModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setCredentialsModal(null)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h3 className="font-bold text-gray-800 text-lg">Login credentials for new teacher</h3>
+              <h3 className="font-bold text-gray-800 text-lg">{credentialsModal.title ?? 'Login credentials for new teacher'}</h3>
               <button onClick={() => setCredentialsModal(null)} className="p-1.5 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-500" /></button>
             </div>
             <div className="p-5 space-y-4">
