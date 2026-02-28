@@ -101,23 +101,26 @@ export default function LMSSection({ profile }: Props) {
 
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: courseData }, { data: assignData }, { data: teacherData }, { data: classData }, { data: subRows }, { data: matData }, { data: subData }] = await Promise.all([
-      supabase.from('courses').select('*, classes:class_id(name, level)').eq('is_active', true).order('subject').order('created_at', { ascending: false }),
-      supabase.from('assignments').select('*, courses:course_id(title, subject)').order('created_at', { ascending: false }).limit(100),
-      supabase.from('teachers').select('id, profile_id, profiles:profile_id(first_name, last_name)').eq('is_active', true),
-      supabase.from('classes').select('id, name').order('name'),
-      supabase.from('subjects').select('name').eq('is_active', true).order('name'),
-      supabase.from('course_materials').select('*, courses:course_id(title, subject)').order('created_at', { ascending: false }),
-      supabase.from('submissions').select('*, assignments:assignment_id(title, courses:course_id(subject, title)), students:student_id(student_id, profiles:profile_id(first_name, last_name))').order('submitted_at', { ascending: false }).limit(200),
-    ]);
-    setCourses((courseData || []) as CourseWithClass[]);
-    setAssignments((assignData || []) as AssignmentWithCourse[]);
-    setTeachers((teacherData || []) as unknown as TeacherOption[]);
-    setClasses((classData || []) as Pick<ClassRow, 'id' | 'name'>[]);
-    if (subRows && subRows.length > 0) setSubjectOptions([...new Set((subRows as { name: string }[]).map(s => s.name))]);
-    setMaterials((matData || []) as MaterialWithCourse[]);
-    setSubmissions((subData || []) as unknown as SubmissionWithDetails[]);
-    setLoading(false);
+    try {
+      const [{ data: courseData }, { data: assignData }, { data: teacherData }, { data: classData }, { data: subRows }, { data: matData }, { data: subData }] = await Promise.all([
+        supabase.from('courses').select('*, classes:class_id(name, level)').eq('is_active', true).order('subject').order('created_at', { ascending: false }),
+        supabase.from('assignments').select('*, courses:course_id(title, subject)').order('created_at', { ascending: false }).limit(100),
+        supabase.from('teachers').select('id, profile_id, profiles:profile_id(first_name, last_name)').eq('is_active', true),
+        supabase.from('classes').select('id, name').order('name'),
+        supabase.from('subjects').select('name').eq('is_active', true).order('name'),
+        supabase.from('course_materials').select('*, courses:course_id(title, subject)').order('created_at', { ascending: false }),
+        supabase.from('submissions').select('*, assignments:assignment_id(title, courses:course_id(subject, title)), students:student_id(student_id, profiles:profile_id(first_name, last_name))').order('submitted_at', { ascending: false }).limit(200),
+      ]);
+      setCourses((courseData || []) as CourseWithClass[]);
+      setAssignments((assignData || []) as AssignmentWithCourse[]);
+      setTeachers((teacherData || []) as unknown as TeacherOption[]);
+      setClasses((classData || []) as Pick<ClassRow, 'id' | 'name'>[]);
+      if (subRows && subRows.length > 0) setSubjectOptions([...new Set((subRows as { name: string }[]).map(s => s.name))]);
+      setMaterials((matData || []) as MaterialWithCourse[]);
+      setSubmissions((subData || []) as unknown as SubmissionWithDetails[]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);

@@ -31,15 +31,18 @@ export default function TeacherTimetableSection({ profile }: Props) {
 
   const fetchSlots = async (tid: string) => {
     setLoading(true);
-    const { data } = await supabase
-      .from('timetable')
-      .select('*, classes:class_id(name)')
-      .eq('teacher_id', tid)
-      .eq('term', filterTerm)
-      .eq('academic_year', filterYear)
-      .order('period');
-    setSlots((data || []) as SlotWithClass[]);
-    setLoading(false);
+    try {
+      const { data } = await supabase
+        .from('timetable')
+        .select('*, classes:class_id(name)')
+        .eq('teacher_id', tid)
+        .eq('term', filterTerm)
+        .eq('academic_year', filterYear)
+        .order('period');
+      setSlots((data || []) as SlotWithClass[]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Group by day

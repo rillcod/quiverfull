@@ -67,6 +67,7 @@ export default function TeacherStudentsSection({ profile }: Props) {
   // Load students only from the teacher's own classes
   const fetchStudents = useCallback(async () => {
     setLoading(true);
+    try {
     // First get the teacher's class IDs
     const { data: myClasses } = await supabase
       .from('classes')
@@ -75,7 +76,6 @@ export default function TeacherStudentsSection({ profile }: Props) {
     const classIds = (myClasses || []).map(c => c.id);
     if (classIds.length === 0) {
       setStudents([]);
-      setLoading(false);
       return;
     }
     const { data } = await supabase
@@ -85,7 +85,9 @@ export default function TeacherStudentsSection({ profile }: Props) {
       .eq('is_active', true)
       .order('student_id');
     setStudents((data || []) as unknown as StudentRow[]);
-    setLoading(false);
+    } finally {
+      setLoading(false);
+    }
   }, [profile.id]);
 
   useEffect(() => { fetchStudents(); }, [fetchStudents]);

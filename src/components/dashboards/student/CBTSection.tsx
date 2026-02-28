@@ -62,15 +62,18 @@ export default function StudentCBTSection({ profile }: Props) {
 
   const fetchExams = async (sid: string) => {
     setLoading(true);
-    const { data } = await supabase.from('cbt_exams').select('*, classes:class_id(name)').eq('is_published', true).order('created_at', { ascending: false });
-    if (!data) { setLoading(false); return; }
-    // Fetch sessions for this student
-    const examIds = (data as CbtExamRow[]).map(e => e.id);
-    const { data: sessions } = await supabase.from('cbt_sessions').select('exam_id, id, total_score, is_submitted, submitted_at').eq('student_id', sid).in('exam_id', examIds);
-    const sessionMap = Object.fromEntries((sessions || []).map(s => [s.exam_id, s]));
-    const enriched = (data as ExamWithClass[]).map(e => ({ ...e, session: sessionMap[e.id] ?? null }));
-    setExams(enriched);
-    setLoading(false);
+    try {
+      const { data } = await supabase.from('cbt_exams').select('*, classes:class_id(name)').eq('is_published', true).order('created_at', { ascending: false });
+      if (!data) return;
+      // Fetch sessions for this student
+      const examIds = (data as CbtExamRow[]).map(e => e.id);
+      const { data: sessions } = await supabase.from('cbt_sessions').select('exam_id, id, total_score, is_submitted, submitted_at').eq('student_id', sid).in('exam_id', examIds);
+      const sessionMap = Object.fromEntries((sessions || []).map(s => [s.exam_id, s]));
+      const enriched = (data as ExamWithClass[]).map(e => ({ ...e, session: sessionMap[e.id] ?? null }));
+      setExams(enriched);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ── Start Exam ─────────────────────────────────────────────────────────────

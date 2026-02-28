@@ -111,31 +111,34 @@ export default function TeacherResultsSection({ profile }: Props) {
   const loadStudents = useCallback(async () => {
     if (!selectedClass) { setStudents([]); return; }
     setLoading(true);
-    const { data: studs } = await supabase
-      .from('students')
-      .select('id, student_id, profiles:profile_id(first_name, last_name, email), classes:class_id(id, name, level), gender, date_of_birth')
-      .eq('class_id', selectedClass)
-      .eq('is_active', true)
-      .order('student_id');
+    try {
+      const { data: studs } = await supabase
+        .from('students')
+        .select('id, student_id, profiles:profile_id(first_name, last_name, email), classes:class_id(id, name, level), gender, date_of_birth')
+        .eq('class_id', selectedClass)
+        .eq('is_active', true)
+        .order('student_id');
 
-    const studList = (studs || []) as StudentInfo[];
-    setStudents(studList);
+      const studList = (studs || []) as StudentInfo[];
+      setStudents(studList);
 
-    if (studList.length > 0) {
-      const { data: sheets } = await supabase
-        .from('result_sheets')
-        .select('*')
-        .in('student_id', studList.map(s => s.id))
-        .eq('term', selectedTerm)
-        .eq('academic_year', academicYear);
+      if (studList.length > 0) {
+        const { data: sheets } = await supabase
+          .from('result_sheets')
+          .select('*')
+          .in('student_id', studList.map(s => s.id))
+          .eq('term', selectedTerm)
+          .eq('academic_year', academicYear);
 
-      const map: Record<string, ResultSheetMeta> = {};
-      (sheets || []).forEach((sh: ResultSheetMeta & { student_id: string }) => {
-        map[sh.student_id] = { ...defaultMeta, ...sh };
-      });
-      setResultSheets(map);
+        const map: Record<string, ResultSheetMeta> = {};
+        (sheets || []).forEach((sh: ResultSheetMeta & { student_id: string }) => {
+          map[sh.student_id] = { ...defaultMeta, ...sh };
+        });
+        setResultSheets(map);
+      }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [selectedClass, selectedTerm, academicYear]);
 
   useEffect(() => { loadStudents(); }, [loadStudents]);

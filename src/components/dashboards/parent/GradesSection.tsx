@@ -127,13 +127,16 @@ export default function ParentGradesSection({ profile }: Props) {
 
   const fetchGrades = async (childId: string) => {
     setLoading(true);
-    const [gradesRes, cbtRes] = await Promise.all([
-      supabase.from('grades').select('*').eq('student_id', childId).order('created_at', { ascending: false }).limit(200),
-      supabase.from('cbt_sessions').select('*, cbt_exams:exam_id(title, subject, total_marks)').eq('student_id', childId).eq('is_submitted', true).order('submitted_at', { ascending: false }),
-    ]);
-    setGrades((gradesRes.data || []) as Grade[]);
-    setCbtResults((cbtRes.data || []) as CbtResult[]);
-    setLoading(false);
+    try {
+      const [gradesRes, cbtRes] = await Promise.all([
+        supabase.from('grades').select('*').eq('student_id', childId).order('created_at', { ascending: false }).limit(200),
+        supabase.from('cbt_sessions').select('*, cbt_exams:exam_id(title, subject, total_marks)').eq('student_id', childId).eq('is_submitted', true).order('submitted_at', { ascending: false }),
+      ]);
+      setGrades((gradesRes.data || []) as Grade[]);
+      setCbtResults((cbtRes.data || []) as CbtResult[]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchResultCard = async (childId: string) => {

@@ -36,12 +36,15 @@ export default function StudentFeesSection({ profile }: Props) {
 
   const fetchFees = async (sid: string) => {
     setLoading(true);
-    let q = supabase.from('fees').select('*').eq('student_id', sid).order('due_date', { ascending: false });
-    if (filterTerm) q = q.eq('term', filterTerm);
-    if (filterYear) q = q.eq('academic_year', filterYear);
-    const { data } = await q;
-    setFees((data || []) as FeeRow[]);
-    setLoading(false);
+    try {
+      let q = supabase.from('fees').select('*').eq('student_id', sid).order('due_date', { ascending: false });
+      if (filterTerm) q = q.eq('term', filterTerm);
+      if (filterYear) q = q.eq('academic_year', filterYear);
+      const { data } = await q;
+      setFees((data || []) as FeeRow[]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { if (studentId) fetchFees(studentId); }, [filterTerm, filterYear]);

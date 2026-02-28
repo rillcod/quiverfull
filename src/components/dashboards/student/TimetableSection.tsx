@@ -47,15 +47,18 @@ export default function StudentTimetableSection({ profile }: Props) {
   const fetchSlots = async () => {
     if (!classId) return;
     setLoading(true);
-    const { data } = await supabase
-      .from('timetable')
-      .select('*, teachers:teacher_id(profiles:profile_id(first_name, last_name))')
-      .eq('class_id', classId)
-      .eq('term', filterTerm)
-      .eq('academic_year', filterYear)
-      .order('period');
-    setSlots((data || []) as SlotWithTeacher[]);
-    setLoading(false);
+    try {
+      const { data } = await supabase
+        .from('timetable')
+        .select('*, teachers:teacher_id(profiles:profile_id(first_name, last_name))')
+        .eq('class_id', classId)
+        .eq('term', filterTerm)
+        .eq('academic_year', filterYear)
+        .order('period');
+      setSlots((data || []) as SlotWithTeacher[]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const grid: Record<Day, Record<number, SlotWithTeacher>> = {

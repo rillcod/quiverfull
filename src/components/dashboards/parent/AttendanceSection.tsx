@@ -44,11 +44,14 @@ export default function ParentAttendanceSection({ profile }: Props) {
 
   const fetchRecords = async (childId: string, month: string) => {
     setLoading(true);
-    const start = `${month}-01`;
-    const end = new Date(new Date(start).setMonth(new Date(start).getMonth() + 1)).toISOString().split('T')[0];
-    const { data } = await supabase.from('attendance').select('*').eq('student_id', childId).gte('date', start).lt('date', end).order('date', { ascending: false });
-    setRecords((data || []) as AttendanceRow[]);
-    setLoading(false);
+    try {
+      const start = `${month}-01`;
+      const end = new Date(new Date(start).setMonth(new Date(start).getMonth() + 1)).toISOString().split('T')[0];
+      const { data } = await supabase.from('attendance').select('*').eq('student_id', childId).gte('date', start).lt('date', end).order('date', { ascending: false });
+      setRecords((data || []) as AttendanceRow[]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { if (selectedChild) fetchRecords(selectedChild, filterMonth); }, [selectedChild, filterMonth]);
